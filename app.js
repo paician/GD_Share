@@ -62,21 +62,30 @@ loadFilesButton.onclick = async () => {
   try {
     const response = await gapi.client.drive.files.list({
       pageSize: 100,
-      q: "sharedWithMe",
-      fields: "files(id, name, webViewLink, createdTime, permissions)"
+      fields: "files(id, name, webViewLink, createdTime, permissions, owners)",
+      q: "trashed = false"
     });
 
     const files = response.result.files;
 
     if (!files || files.length === 0) {
-      fileList.innerHTML = "<p>目前沒有分享給您的檔案。</p>";
+      fileList.innerHTML = "<p>目前沒有檔案。</p>";
+      return;
+    }
+
+    const sharedFiles = files.filter(file =>
+      file.permissions && file.permissions.some(p => p.role === "reader" || p.role === "commenter" || p.role === "writer")
+    );
+
+    if (sharedFiles.length === 0) {
+      fileList.innerHTML = "<p>目前沒有您分享的檔案。</p>";
       return;
     }
 
     fileList.innerHTML = "<ul></ul>";
     const ul = fileList.querySelector("ul");
 
-    files.forEach((file) => {
+    sharedFiles.forEach((file) => {
       const li = document.createElement("li");
       li.innerHTML = `
         📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a><br/>
@@ -92,6 +101,7 @@ loadFilesButton.onclick = async () => {
   }
 };
 
+
   
   
 
@@ -100,4 +110,5 @@ window.onload = () => {
   gapiLoaded();
   gisLoaded();
 };
+
 
