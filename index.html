@@ -5,40 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Google Drive 分享檔案查看器</title>
     <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
+    <style>
+      #file-list ul {
+        list-style: none;
+        padding: 0;
+      }
+      #file-list li {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      }
+      #file-list li a {
+        font-weight: bold;
+        color: #0d6efd;
+        text-decoration: none;
+      }
+      #file-list li small {
+        color: #666;
+        display: block;
+        margin-top: 0.5rem;
+      }
+      .actions {
+        margin: 1rem 0;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .loading {
+        text-align: center;
+        font-style: italic;
+        color: #666;
+      }
+      .loading::after {
+        content: "⏳";
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-left: 5px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+      }
+    </style>
   </head>
   <body>
     <nav class="container-fluid">
       <ul>
         <li><strong>Google Drive 分享查看器</strong></li>
       </ul>
-      <ul>
-        <li><a href="#" id="signin-button">登入</a></li>
-        <li><a href="#" id="signout-button">登出</a></li>
+      <ul class="actions">
+        <li><a href="#" id="signin-button" role="button" class="contrast">登入</a></li>
+        <li><a href="#" id="signout-button" role="button" class="secondary">登出</a></li>
       </ul>
     </nav>
 
     <main class="container">
-      <div class="grid">
-        <section>
-          <hgroup>
-            <h2>已分享的檔案</h2>
-            <h3>列出您帳號下所有的分享檔案</h3>
-          </hgroup>
-          <p>請先登入您的 Google 帳號，然後按下下方的按鈕以載入您分享的檔案。</p>
-          <label for="mode">選擇要查詢的分享類型：</label>
-          <select id="mode">
-            <option value="sharedWithMe">別人分享給我</option>
-            <option value="sharedByMe">我分享給別人</option>
-          </select>          
+      <section>
+        <hgroup>
+          <h2>已分享的檔案</h2>
+          <h3>列出您帳號下所有的分享檔案</h3>
+        </hgroup>
+
+        <fieldset>
+          <legend>選擇要查詢的分享類型</legend>
+          <label>
+            <input type="radio" name="mode" value="sharedWithMe" checked />
+            別人分享給我
+          </label>
+          <label>
+            <input type="radio" name="mode" value="sharedByMe" />
+            我分享給別人
+          </label>
+        </fieldset>
+
+        <div class="actions">
           <button id="load-files">載入分享檔案</button>
-          <div id="file-list"></div>
-        </section>
-      </div>
+        </div>
+        
+        <div id="file-list"></div>
+      </section>
     </main>
 
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js"></script>
-    
   </body>
 </html>

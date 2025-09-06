@@ -60,57 +60,56 @@ signoutButton.onclick = () => {
 };
 
 loadFilesButton.onclick = async () => {
-    const mode = document.getElementById("mode").value;
-    fileList.innerHTML = "<p>🔄 載入中，請稍候...</p>";
-  
-    try {
-      let files = [];
-  
-      if (mode === "sharedWithMe") {
-        const response = await gapi.client.drive.files.list({
-          pageSize: 100,
-          q: "sharedWithMe",
-          fields: "files(id, name, webViewLink, createdTime, permissions)"
-        });
-        files = response.result.files;
-      }
-  
-      if (mode === "sharedByMe") {
-        const response = await gapi.client.drive.files.list({
-          pageSize: 100,
-          q: "trashed = false",
-          fields: "files(id, name, webViewLink, createdTime, permissions, owners)"
-        });
-  
-        files = response.result.files.filter(file =>
-          file.permissions &&
-          file.permissions.some(p => p.role !== "owner")
-        );
-      }
-  
-      if (!files || files.length === 0) {
-        fileList.innerHTML = "<p>⚠️ 沒有找到符合的分享檔案。</p>";
-        return;
-      }
-  
-      fileList.innerHTML = "<ul></ul>";
-      const ul = fileList.querySelector("ul");
-  
-      files.forEach((file) => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a><br/>
-          <small>建立時間：${new Date(file.createdTime).toLocaleString()}</small>
-        `;
-        ul.appendChild(li);
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
+
+  try {
+    let files = [];
+
+    if (mode === "sharedWithMe") {
+      const response = await gapi.client.drive.files.list({
+        pageSize: 100,
+        q: "sharedWithMe",
+        fields: "files(id, name, webViewLink, createdTime, permissions)"
       });
-  
-    } catch (err) {
-      console.error("載入檔案失敗：", err);
-      const message = err.result?.error?.message || "未知錯誤";
-      fileList.innerHTML = `<p>⚠️ 發生錯誤：${message}</p>`;
+      files = response.result.files;
     }
-  };
+
+    if (mode === "sharedByMe") {
+      const response = await gapi.client.drive.files.list({
+        pageSize: 100,
+        q: "trashed = false",
+        fields: "files(id, name, webViewLink, createdTime, permissions, owners)"
+      });
+      files = response.result.files.filter(file =>
+        file.permissions && file.permissions.some(p => p.role !== "owner")
+      );
+    }
+
+    if (!files || files.length === 0) {
+      fileList.innerHTML = "<p>⚠️ 沒有找到符合的分享檔案。</p>";
+      return;
+    }
+
+    fileList.innerHTML = "<ul></ul>";
+    const ul = fileList.querySelector("ul");
+
+    files.forEach((file) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a>
+        <small>建立時間：${new Date(file.createdTime).toLocaleString()}</small>
+      `;
+      ul.appendChild(li);
+    });
+
+  } catch (err) {
+    console.error("載入檔案失敗：", err);
+    const message = err.result?.error?.message || "未知錯誤";
+    fileList.innerHTML = `<p>⚠️ 發生錯誤：${message}</p>`;
+  }
+};
+
   
   
   
