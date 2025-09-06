@@ -47,7 +47,7 @@ signinButton.onclick = () => {
     signinButton.style.display = "none";
     signoutButton.style.display = "inline-block";
   };
-  tokenClient.requestAccessToken({ prompt: "consent" });
+  tokenClient.requestAccessToken({ prompt: "" });
 };
 
 signoutButton.onclick = () => {
@@ -55,6 +55,7 @@ signoutButton.onclick = () => {
     signinButton.style.display = "inline-block";
     signoutButton.style.display = "none";
     fileList.innerHTML = "";
+    gapi.client.setToken(null);
   });
 };
 
@@ -117,7 +118,23 @@ loadFilesButton.onclick = async () => {
   
 
 // 初始化 Google API 和身份驗證
+// 初始化 Google API 和身份驗證
 window.onload = () => {
-  gapiLoaded();
-  gisLoaded();
-};
+    gapiLoaded();
+    gisLoaded();
+  
+    // 檢查登入狀態，自動顯示登入/登出按鈕
+    setTimeout(() => {
+      const token = gapi.client.getToken();
+      if (token && token.access_token) {
+        // 已登入
+        signinButton.style.display = "none";
+        signoutButton.style.display = "inline-block";
+      } else {
+        // 未登入
+        signinButton.style.display = "inline-block";
+        signoutButton.style.display = "none";
+      }
+    }, 1000); // 等待 GAPI 初始化完畢
+  };
+  
