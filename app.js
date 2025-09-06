@@ -59,38 +59,39 @@ signoutButton.onclick = () => {
 };
 
 loadFilesButton.onclick = async () => {
-    try {
-      const response = await gapi.client.drive.files.list({
-        pageSize: 100,
-        q: "shared = true",
-        fields: "files(id, name, webViewLink, createdTime, permissions)"
-      });
-  
-      const files = response.result.files;
-  
-      if (!files || files.length === 0) {
-        fileList.innerHTML = "<p>目前沒有您分享的檔案。</p>";
-        return;
-      }
-  
-      fileList.innerHTML = "<ul></ul>";
-      const ul = fileList.querySelector("ul");
-  
-      files.forEach((file) => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a><br/>
-          <small>建立時間：${new Date(file.createdTime).toLocaleString()}</small>
-        `;
-        ul.appendChild(li);
-      });
-  
-    } catch (err) {
-      console.error("載入檔案失敗：", err);
-      const message = err.result?.error?.message || "未知錯誤";
-      fileList.innerHTML = `<p>⚠️ 發生錯誤：${message}</p>`;
+  try {
+    const response = await gapi.client.drive.files.list({
+      pageSize: 100,
+      q: "sharedWithMe",
+      fields: "files(id, name, webViewLink, createdTime, permissions)"
+    });
+
+    const files = response.result.files;
+
+    if (!files || files.length === 0) {
+      fileList.innerHTML = "<p>目前沒有分享給您的檔案。</p>";
+      return;
     }
-  };
+
+    fileList.innerHTML = "<ul></ul>";
+    const ul = fileList.querySelector("ul");
+
+    files.forEach((file) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a><br/>
+        <small>建立時間：${new Date(file.createdTime).toLocaleString()}</small>
+      `;
+      ul.appendChild(li);
+    });
+
+  } catch (err) {
+    console.error("載入檔案失敗：", err);
+    const message = err.result?.error?.message || "未知錯誤";
+    fileList.innerHTML = `<p>⚠️ 發生錯誤：${message}</p>`;
+  }
+};
+
   
   
 
@@ -99,3 +100,4 @@ window.onload = () => {
   gapiLoaded();
   gisLoaded();
 };
+
