@@ -471,7 +471,7 @@ function createCharts() {
         window.ordersChart.destroy();
       }
     
-    // 計算檔案類型分佈
+    // 計算檔案類型分佈（包含存取統計）
     const typeData = calculateFileTypeDistribution();
     
     window.ordersChart = new Chart(ordersCtx, {
@@ -484,6 +484,15 @@ function createCharts() {
           backgroundColor: [
             '#6366f1', '#8b5cf6', '#a855f7', '#c084fc', '#d946ef',
             '#ec4899', '#f43f5e', '#fb7185', '#fbbf24', '#f59e0b'
+          ],
+          borderColor: '#ffffff',
+          borderWidth: 2,
+        }, {
+          label: '分享對象數',
+          data: typeData.accessData,
+          backgroundColor: [
+            '#10b981', '#059669', '#047857', '#065f46', '#064e3b',
+            '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5', '#ecfdf5'
           ],
           borderColor: '#ffffff',
           borderWidth: 2,
@@ -529,16 +538,24 @@ function calculateShareTrend() {
   return { labels, data };
 }
 
-// 計算檔案類型分佈
+// 計算檔案類型分佈（包含存取統計）
 function calculateFileTypeDistribution() {
   if (fileData.allFiles.length === 0) {
-    return { labels: ['無資料'], data: [0] };
+    return { labels: ['無資料'], data: [0], accessData: [0] };
   }
   
   const typeCount = {};
+  const accessStats = {};
+  
   fileData.allFiles.forEach(file => {
     const extension = file.name.split('.').pop()?.toLowerCase() || 'unknown';
     typeCount[extension] = (typeCount[extension] || 0) + 1;
+    
+    // 計算每個類型的存取統計（分享對象數量）
+    if (file.permissions) {
+      const accessCount = file.permissions.filter(p => p.role !== 'owner').length;
+      accessStats[extension] = (accessStats[extension] || 0) + accessCount;
+    }
   });
   
   // 只顯示前8個最常見的類型
@@ -548,8 +565,9 @@ function calculateFileTypeDistribution() {
   
   const labels = sortedTypes.map(([type]) => type.toUpperCase());
   const data = sortedTypes.map(([,count]) => count);
+  const accessData = sortedTypes.map(([type]) => accessStats[type] || 0);
   
-  return { labels, data };
+  return { labels, data, accessData };
 }
 
 // 更新儀表板資料
@@ -985,33 +1003,43 @@ function displayFiles(files) {
     const fileIcon = getFileIcon(file.name);
     
       li.innerHTML = `
-      <div class="d-flex justify-content-between align-items-start">
-        <div class="ms-2 me-auto">
-          <div class="fw-bold">
-            <i class="${fileIcon} me-2"></i>
-            <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
-          </div>
-          <small class="text-muted">
-            <i class="fas fa-calendar me-1"></i>
-            建立時間：${new Date(file.createdTime).toLocaleString()}
-            ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
-            <br><i class="fas fa-share-alt me-1"></i>分享狀態：${getShareStatus(file)}
-          </small>
+      <div class="d-flex align-items-center">
+        <!-- 勾選框 - 移到最左邊更醒目 -->
+        <div class="form-check me-3">
+          <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-checkbox-${file.id}" onchange="updateSelectedCount()" style="transform: scale(1.2);">
+          <label class="form-check-label fw-bold" for="file-checkbox-${file.id}">
+            選擇
+          </label>
         </div>
-        <div class="text-end">
-          <div class="form-check mb-2">
-            <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-checkbox-${file.id}" onchange="updateSelectedCount()">
-            <label class="form-check-label" for="file-checkbox-${file.id}">
-              <small>選擇</small>
-            </label>
+        
+        <!-- 檔案圖標和名稱 -->
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center mb-1">
+            <i class="${fileIcon} me-2 text-primary fs-5"></i>
+            <a href="${file.webViewLink}" target="_blank" class="text-decoration-none fw-bold text-truncate" style="max-width: 400px;" title="${file.name}">${file.name}</a>
+            <span class="badge bg-primary rounded-pill ms-2">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
           </div>
-          <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
-          <br>
-          <small class="text-muted">${getFileAge(file.createdTime)}</small>
-          <br>
-          <button class="btn btn-sm btn-outline-primary mt-1" onclick="toggleFileDetails('${file.id}')">
-            <i class="fas fa-chevron-down" id="chevron-${file.id}"></i> 詳細
-          </button>
+          
+          <!-- 檔案資訊 - 單排顯示 -->
+          <div class="row text-muted small">
+            <div class="col-md-3">
+              <i class="fas fa-calendar me-1"></i>${new Date(file.createdTime).toLocaleDateString()}
+            </div>
+            <div class="col-md-2">
+              <i class="fas fa-clock me-1"></i>${getFileAge(file.createdTime)}
+            </div>
+            <div class="col-md-2">
+              ${file.size ? `<i class="fas fa-hdd me-1"></i>${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : '<i class="fas fa-hdd me-1"></i>0 MB'}
+            </div>
+            <div class="col-md-3">
+              <i class="fas fa-share-alt me-1"></i>${getShareStatus(file)}
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-sm btn-outline-primary" onclick="toggleFileDetails('${file.id}')">
+                <i class="fas fa-chevron-down" id="chevron-${file.id}"></i> 詳細
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="file-details-content mt-3" id="details-${file.id}" style="display: none;">
@@ -1240,22 +1268,22 @@ function generateFileSelectionList() {
     return;
   }
   
-  let html = '<div class="row">';
+  let html = '';
   files.forEach((file, index) => {
     const fileIcon = getFileIcon(file.name);
     html += `
-      <div class="col-md-6 mb-2">
-        <div class="form-check">
-          <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-${index}">
-          <label class="form-check-label" for="file-${index}">
-            <i class="${fileIcon} me-2"></i>
-            <span class="text-truncate" style="max-width: 200px;" title="${file.name}">${file.name}</span>
-          </label>
-        </div>
+      <div class="form-check mb-2 p-2 border rounded">
+        <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-${index}">
+        <label class="form-check-label w-100" for="file-${index}">
+          <div class="d-flex align-items-center">
+            <i class="${fileIcon} me-2 text-primary"></i>
+            <span class="text-truncate flex-grow-1" style="max-width: 300px;" title="${file.name}">${file.name}</span>
+            <small class="text-muted ms-2">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</small>
+          </div>
+        </label>
       </div>
     `;
   });
-  html += '</div>';
   
   fileSelectionList.innerHTML = html;
   
@@ -1477,22 +1505,22 @@ function generateRemoveFileSelectionList() {
     return;
   }
   
-  let html = '<div class="row">';
+  let html = '';
   files.forEach((file, index) => {
     const fileIcon = getFileIcon(file.name);
     html += `
-      <div class="col-md-6 mb-2">
-        <div class="form-check">
-          <input class="form-check-input remove-file-checkbox" type="checkbox" value="${file.id}" id="remove-file-${index}">
-          <label class="form-check-label" for="remove-file-${index}">
-            <i class="${fileIcon} me-2"></i>
-            <span class="text-truncate" style="max-width: 200px;" title="${file.name}">${file.name}</span>
-          </label>
-        </div>
+      <div class="form-check mb-2 p-2 border rounded">
+        <input class="form-check-input remove-file-checkbox" type="checkbox" value="${file.id}" id="remove-file-${index}">
+        <label class="form-check-label w-100" for="remove-file-${index}">
+          <div class="d-flex align-items-center">
+            <i class="${fileIcon} me-2 text-primary"></i>
+            <span class="text-truncate flex-grow-1" style="max-width: 300px;" title="${file.name}">${file.name}</span>
+            <small class="text-muted ms-2">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</small>
+          </div>
+        </label>
       </div>
     `;
   });
-  html += '</div>';
   
   fileSelectionList.innerHTML = html;
   
@@ -1705,6 +1733,11 @@ async function loadFileAccessStats() {
   `;
   
   try {
+    // 檢查 Google Drive Activity API 是否可用
+    if (!gapi.client.drive || !gapi.client.drive.activity) {
+      throw new Error('Google Drive Activity API 未載入，請重新整理頁面');
+    }
+    
     // 獲取檔案活動記錄
     const response = await gapi.client.drive.activity.query({
       pageSize: 100,
@@ -1736,6 +1769,7 @@ async function loadFileAccessStats() {
       <div class="alert alert-danger">
         <i class="fas fa-exclamation-triangle me-2"></i>
         載入存取統計失敗：${error.message}
+        <br><small class="text-muted">存取統計功能需要 Google Drive Activity API 支援</small>
       </div>
     `;
   }
