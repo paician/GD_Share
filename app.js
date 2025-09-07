@@ -1277,9 +1277,9 @@ function generateFileSelectionList() {
   }
   
   // 根據選中的檔案 ID 獲取檔案資訊
-  const selectedFiles = fileData.allFiles.filter(file => selectedFileIds.includes(file.id));
+  const selectedFilesList = fileData.allFiles.filter(file => selectedFileIds.includes(file.id));
   
-  if (selectedFiles.length === 0) {
+  if (selectedFilesList.length === 0) {
     fileSelectionList.innerHTML = '<p class="text-muted text-center">找不到選中的檔案</p>';
     return;
   }
@@ -1294,13 +1294,13 @@ function generateFileSelectionList() {
           <i class="fas fa-square me-1"></i>取消全選
         </button>
         <span class="text-muted">
-          已選擇 <span id="batch-selected-count">${selectedFiles.length}</span> 個檔案
+          已選擇 <span id="batch-selected-count">${selectedFilesList.length}</span> 個檔案
         </span>
       </div>
     </div>
   `;
   
-  selectedFiles.forEach((file, index) => {
+  selectedFilesList.forEach((file, index) => {
     const fileIcon = getFileIcon(file.name);
     html += `
       <div class="form-check mb-2 p-2 border rounded">
@@ -1567,9 +1567,9 @@ function generateRemoveFileSelectionList() {
   }
   
   // 根據選中的檔案 ID 獲取檔案資訊
-  const selectedFiles = fileData.allFiles.filter(file => selectedFileIds.includes(file.id));
+  const selectedFilesList = fileData.allFiles.filter(file => selectedFileIds.includes(file.id));
   
-  if (selectedFiles.length === 0) {
+  if (selectedFilesList.length === 0) {
     fileSelectionList.innerHTML = '<p class="text-muted text-center">找不到選中的檔案</p>';
     return;
   }
@@ -1584,13 +1584,13 @@ function generateRemoveFileSelectionList() {
           <i class="fas fa-square me-1"></i>取消全選
         </button>
         <span class="text-muted">
-          已選擇 <span id="remove-selected-count">${selectedFiles.length}</span> 個檔案
+          已選擇 <span id="remove-selected-count">${selectedFilesList.length}</span> 個檔案
         </span>
       </div>
     </div>
   `;
   
-  selectedFiles.forEach((file, index) => {
+  selectedFilesList.forEach((file, index) => {
     const fileIcon = getFileIcon(file.name);
     html += `
       <div class="form-check mb-2 p-2 border rounded">
