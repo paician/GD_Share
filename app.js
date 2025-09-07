@@ -999,6 +999,12 @@ function displayFiles(files) {
           </small>
         </div>
         <div class="text-end">
+          <div class="form-check mb-2">
+            <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-checkbox-${file.id}" onchange="updateSelectedCount()">
+            <label class="form-check-label" for="file-checkbox-${file.id}">
+              <small>選擇</small>
+            </label>
+          </div>
           <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
           <br>
           <small class="text-muted">${getFileAge(file.createdTime)}</small>
@@ -1031,9 +1037,18 @@ function displayFiles(files) {
           </div>
         </div>
       </div>
-      `;
-      ul.appendChild(li);
-    });
+    `;
+    ul.appendChild(li);
+  });
+  
+  // 顯示檔案列表操作欄
+  const fileListActions = document.getElementById('file-list-actions');
+  if (fileListActions) {
+    fileListActions.style.display = 'flex';
+  }
+  
+  // 更新選中計數
+  updateSelectedCount();
 }
 
 // 切換檔案詳細資訊顯示
@@ -1200,6 +1215,8 @@ function checkFilePermission(file, targetPermission) {
 // 批次修改權限功能
 let selectedFiles = [];
 let shareRecipients = [];
+let removeSelectedFiles = [];
+let removeSelectedRecipients = [];
 
 // 顯示批次修改模態框
 function showBatchEditModal() {
@@ -1403,6 +1420,441 @@ async function addFilePermission(fileId, email, role) {
       emailAddress: email
     }
   });
+}
+
+// 檔案選擇相關函數
+function updateSelectedCount() {
+  const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+  const count = checkboxes.length;
+  document.getElementById('selected-count').textContent = count;
+  
+  // 更新批次修改按鈕狀態
+  const batchEditButton = document.getElementById('batch-edit-permissions');
+  const batchRemoveButton = document.getElementById('batch-remove-permissions');
+  
+  if (batchEditButton) {
+    batchEditButton.disabled = count === 0;
+  }
+  if (batchRemoveButton) {
+    batchRemoveButton.disabled = count === 0;
+  }
+}
+
+function selectAllFiles() {
+  const checkboxes = document.querySelectorAll('.file-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = true;
+  });
+  updateSelectedCount();
+}
+
+function deselectAllFiles() {
+  const checkboxes = document.querySelectorAll('.file-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  updateSelectedCount();
+}
+
+// 批次取消分享功能
+function showBatchRemoveModal() {
+  const modal = new bootstrap.Modal(document.getElementById('batchRemoveModal'));
+  
+  // 生成檔案選擇列表
+  generateRemoveFileSelectionList();
+  
+  modal.show();
+}
+
+function generateRemoveFileSelectionList() {
+  const fileSelectionList = document.getElementById('remove-file-selection-list');
+  
+  // 使用當前篩選結果的檔案
+  const files = applyFiltersAndSearch(fileData.allFiles || []);
+  
+  if (files.length === 0) {
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">沒有符合篩選條件的檔案</p>';
+    return;
+  }
+  
+  let html = '<div class="row">';
+  files.forEach((file, index) => {
+    const fileIcon = getFileIcon(file.name);
+    html += `
+      <div class="col-md-6 mb-2">
+        <div class="form-check">
+          <input class="form-check-input remove-file-checkbox" type="checkbox" value="${file.id}" id="remove-file-${index}">
+          <label class="form-check-label" for="remove-file-${index}">
+            <i class="${fileIcon} me-2"></i>
+            <span class="text-truncate" style="max-width: 200px;" title="${file.name}">${file.name}</span>
+          </label>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  
+  fileSelectionList.innerHTML = html;
+  
+  // 綁定選擇事件
+  document.querySelectorAll('.remove-file-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateRemoveSelectedFiles);
+  });
+}
+
+function updateRemoveSelectedFiles() {
+  removeSelectedFiles = Array.from(document.querySelectorAll('.remove-file-checkbox:checked')).map(cb => cb.value);
+  
+  // 如果選擇了檔案，載入分享對象
+  if (removeSelectedFiles.length > 0) {
+    loadRemoveRecipients();
+  } else {
+    document.getElementById('remove-recipients-section').style.display = 'none';
+  }
+}
+
+async function loadRemoveRecipients() {
+  const recipientsList = document.getElementById('remove-recipients-list');
+  recipientsList.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> 載入分享對象...</div>';
+  
+  try {
+    let allRecipients = new Set();
+    
+    for (const fileId of removeSelectedFiles) {
+      const file = fileData.allFiles.find(f => f.id === fileId);
+      if (file && file.permissions) {
+        file.permissions.forEach(permission => {
+          if (permission.role !== 'owner') {
+            if (permission.id === 'anyoneWithLink' || permission.type === 'anyone') {
+              allRecipients.add('知道連結的任何人');
+            } else {
+              const userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+              allRecipients.add(userInfo);
+            }
+          }
+        });
+      }
+    }
+    
+    if (allRecipients.size === 0) {
+      recipientsList.innerHTML = '<p class="text-muted text-center">選中的檔案沒有分享對象</p>';
+      return;
+    }
+    
+    let html = '';
+    Array.from(allRecipients).forEach((recipient, index) => {
+      html += `
+        <div class="form-check">
+          <input class="form-check-input remove-recipient-checkbox" type="checkbox" value="${recipient}" id="remove-recipient-${index}">
+          <label class="form-check-label" for="remove-recipient-${index}">
+            ${recipient}
+          </label>
+        </div>
+      `;
+    });
+    
+    recipientsList.innerHTML = html;
+    document.getElementById('remove-recipients-section').style.display = 'block';
+    
+    // 綁定選擇事件
+    document.querySelectorAll('.remove-recipient-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', updateRemoveSelectedRecipients);
+    });
+    
+  } catch (error) {
+    console.error('載入分享對象失敗：', error);
+    recipientsList.innerHTML = '<div class="alert alert-danger">載入分享對象失敗</div>';
+  }
+}
+
+function updateRemoveSelectedRecipients() {
+  removeSelectedRecipients = Array.from(document.querySelectorAll('.remove-recipient-checkbox:checked')).map(cb => cb.value);
+}
+
+async function executeBatchRemovePermissions() {
+  if (removeSelectedFiles.length === 0) {
+    alert('請選擇要取消分享的檔案');
+    return;
+  }
+  
+  const removeOption = document.querySelector('input[name="removeOption"]:checked').value;
+  
+  if (removeOption === 'selected' && removeSelectedRecipients.length === 0) {
+    alert('請選擇要取消的分享對象');
+    return;
+  }
+  
+  const confirmMessage = removeOption === 'all' 
+    ? `確定要對 ${removeSelectedFiles.length} 個檔案取消所有分享權限嗎？\n\n這將移除除了擁有者以外的所有分享權限。`
+    : `確定要對 ${removeSelectedFiles.length} 個檔案取消選中的分享對象嗎？\n\n分享對象：${removeSelectedRecipients.join(', ')}`;
+  
+  if (!confirm(confirmMessage)) {
+    return;
+  }
+  
+  try {
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const fileId of removeSelectedFiles) {
+      try {
+        if (removeOption === 'all') {
+          await removeExistingPermissions(fileId);
+        } else {
+          await removeSelectedPermissions(fileId, removeSelectedRecipients);
+        }
+        successCount++;
+      } catch (error) {
+        console.error(`取消檔案 ${fileId} 分享失敗：`, error);
+        errorCount++;
+      }
+    }
+    
+    alert(`取消分享完成！\n成功：${successCount} 個檔案\n失敗：${errorCount} 個檔案`);
+    
+    // 關閉模態框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('batchRemoveModal'));
+    modal.hide();
+    
+    // 重新載入檔案列表
+    await loadAllDataAndUpdateDashboard();
+    
+  } catch (error) {
+    console.error('批次取消分享失敗：', error);
+    alert('批次取消分享失敗：' + error.message);
+  }
+}
+
+async function removeSelectedPermissions(fileId, recipients) {
+  const response = await gapi.client.drive.permissions.list({
+    fileId: fileId,
+    fields: 'permissions(id,type,role,emailAddress,displayName)'
+  });
+  
+  const permissions = response.result.permissions || [];
+  
+  for (const permission of permissions) {
+    if (permission.role !== 'owner') {
+      let shouldRemove = false;
+      
+      if (permission.id === 'anyoneWithLink' || permission.type === 'anyone') {
+        shouldRemove = recipients.includes('知道連結的任何人');
+      } else {
+        const userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+        shouldRemove = recipients.includes(userInfo);
+      }
+      
+      if (shouldRemove) {
+        try {
+          await gapi.client.drive.permissions.delete({
+            fileId: fileId,
+            permissionId: permission.id
+          });
+        } catch (error) {
+          console.warn(`無法移除權限 ${permission.id}：`, error);
+        }
+      }
+    }
+  }
+}
+
+// 存取統計功能
+function showAccessStats() {
+  const modal = new bootstrap.Modal(document.getElementById('accessStatsModal'));
+  
+  // 生成檔案選擇器
+  generateStatsFileSelector();
+  
+  modal.show();
+}
+
+function generateStatsFileSelector() {
+  const selector = document.getElementById('stats-file-selector');
+  const files = fileData.allFiles || [];
+  
+  selector.innerHTML = '<option value="">請選擇檔案...</option>';
+  
+  files.forEach(file => {
+    const option = document.createElement('option');
+    option.value = file.id;
+    option.textContent = file.name;
+    selector.appendChild(option);
+  });
+}
+
+async function loadFileAccessStats() {
+  const fileId = document.getElementById('stats-file-selector').value;
+  const timeRange = document.getElementById('stats-time-range').value;
+  const content = document.getElementById('access-stats-content');
+  
+  if (!fileId) {
+    content.innerHTML = `
+      <div class="text-center text-muted">
+        <i class="fas fa-chart-bar fa-3x mb-3"></i>
+        <p>請選擇檔案以查看存取統計</p>
+      </div>
+    `;
+    return;
+  }
+  
+  content.innerHTML = `
+    <div class="text-center">
+      <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+      <p>正在載入存取統計...</p>
+    </div>
+  `;
+  
+  try {
+    // 獲取檔案活動記錄
+    const response = await gapi.client.drive.activity.query({
+      pageSize: 100,
+      ancestorName: `files/${fileId}`,
+      filter: `time >= "${getDateFilter(timeRange)}"`
+    });
+    
+    const activities = response.result.activities || [];
+    
+    if (activities.length === 0) {
+      content.innerHTML = `
+        <div class="text-center text-muted">
+          <i class="fas fa-chart-line fa-3x mb-3"></i>
+          <p>在最近 ${timeRange} 天內沒有存取記錄</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // 分析活動數據
+    const stats = analyzeActivities(activities);
+    
+    // 顯示統計結果
+    displayAccessStats(stats, timeRange);
+    
+  } catch (error) {
+    console.error('載入存取統計失敗：', error);
+    content.innerHTML = `
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        載入存取統計失敗：${error.message}
+      </div>
+    `;
+  }
+}
+
+function getDateFilter(days) {
+  const date = new Date();
+  date.setDate(date.getDate() - parseInt(days));
+  return date.toISOString();
+}
+
+function analyzeActivities(activities) {
+  const stats = {
+    totalAccess: activities.length,
+    uniqueUsers: new Set(),
+    accessByDay: {},
+    accessByType: {},
+    recentAccess: []
+  };
+  
+  activities.forEach(activity => {
+    // 統計用戶
+    if (activity.actors && activity.actors.length > 0) {
+      activity.actors.forEach(actor => {
+        if (actor.user) {
+          stats.uniqueUsers.add(actor.user.emailAddress || actor.user.displayName || '未知用戶');
+        }
+      });
+    }
+    
+    // 統計日期
+    const date = new Date(activity.timestamp).toDateString();
+    stats.accessByDay[date] = (stats.accessByDay[date] || 0) + 1;
+    
+    // 統計類型
+    const type = activity.primaryActionDetail?.detailCase || 'unknown';
+    stats.accessByType[type] = (stats.accessByType[type] || 0) + 1;
+    
+    // 最近存取
+    stats.recentAccess.push({
+      timestamp: activity.timestamp,
+      type: type,
+      user: activity.actors?.[0]?.user?.emailAddress || '未知用戶'
+    });
+  });
+  
+  // 按時間排序最近存取
+  stats.recentAccess.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  
+  return stats;
+}
+
+function displayAccessStats(stats, timeRange) {
+  const content = document.getElementById('access-stats-content');
+  
+  content.innerHTML = `
+    <div class="row">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-primary">${stats.totalAccess}</h5>
+            <p class="card-text">總存取次數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-success">${stats.uniqueUsers.size}</h5>
+            <p class="card-text">唯一用戶數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-info">${Object.keys(stats.accessByDay).length}</h5>
+            <p class="card-text">活躍天數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-warning">${Math.round(stats.totalAccess / parseInt(timeRange) * 10) / 10}</h5>
+            <p class="card-text">平均每日存取</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <h6>存取用戶</h6>
+        <div class="list-group">
+          ${Array.from(stats.uniqueUsers).map(user => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <span>${user}</span>
+              <span class="badge bg-primary rounded-pill">用戶</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <h6>最近存取記錄</h6>
+        <div class="list-group" style="max-height: 300px; overflow-y: auto;">
+          ${stats.recentAccess.slice(0, 10).map(access => `
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between">
+                <span>${access.user}</span>
+                <small class="text-muted">${new Date(access.timestamp).toLocaleString()}</small>
+              </div>
+              <small class="text-muted">${access.type}</small>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // 多帳號管理功能

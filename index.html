@@ -715,12 +715,35 @@
                  <button id="load-files" class="btn btn-primary me-2">
                    <i class="fas fa-sync me-1"></i>載入分享檔案
                  </button>
-                 <button id="batch-edit-permissions" class="btn btn-warning" onclick="showBatchEditModal()" disabled>
+                 <button id="batch-edit-permissions" class="btn btn-warning me-2" onclick="showBatchEditModal()" disabled>
                    <i class="fas fa-edit me-1"></i>批次修改權限
+                 </button>
+                 <button id="batch-remove-permissions" class="btn btn-danger" onclick="showBatchRemoveModal()" disabled>
+                   <i class="fas fa-unlink me-1"></i>批次取消分享
                  </button>
                </div>
                <div class="text-muted">
                  <span id="file-count">0</span> 個檔案
+               </div>
+             </div>
+             
+             <!-- 檔案列表操作欄 -->
+             <div class="d-flex justify-content-between align-items-center mb-3" id="file-list-actions" style="display: none;">
+               <div>
+                 <button class="btn btn-sm btn-outline-primary me-2" onclick="selectAllFiles()">
+                   <i class="fas fa-check-square me-1"></i>全選
+                 </button>
+                 <button class="btn btn-sm btn-outline-secondary me-2" onclick="deselectAllFiles()">
+                   <i class="fas fa-square me-1"></i>取消全選
+                 </button>
+                 <span class="text-muted">
+                   已選擇 <span id="selected-count">0</span> 個檔案
+                 </span>
+               </div>
+               <div>
+                 <button class="btn btn-sm btn-info" onclick="showAccessStats()">
+                   <i class="fas fa-chart-bar me-1"></i>存取統計
+                 </button>
                </div>
              </div>
             
@@ -894,12 +917,115 @@
     </div>
   </div>
 
+  <!-- 批次取消分享模態框 -->
+  <div class="modal fade" id="batchRemoveModal" tabindex="-1" aria-labelledby="batchRemoveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="batchRemoveModalLabel">
+            <i class="fas fa-unlink me-2"></i>批次取消分享權限
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            此功能將對選中的檔案進行批次取消分享。請謹慎操作！
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">選擇要取消分享的檔案</label>
+            <div id="remove-file-selection-list" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+              <p class="text-muted text-center">請先載入檔案列表</p>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">取消分享選項</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="removeOption" value="all" id="removeAll" checked>
+              <label class="form-check-label" for="removeAll">
+                取消所有分享權限（除了擁有者）
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="removeOption" value="selected" id="removeSelected">
+              <label class="form-check-label" for="removeSelected">
+                只取消勾選的分享對象
+              </label>
+            </div>
+          </div>
+          
+          <div class="mb-3" id="remove-recipients-section" style="display: none;">
+            <label class="form-label">選擇要取消的分享對象</label>
+            <div id="remove-recipients-list" class="border rounded p-3" style="max-height: 150px; overflow-y: auto;">
+              <p class="text-muted text-center">請先選擇檔案</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-danger" onclick="executeBatchRemovePermissions()">
+            <i class="fas fa-unlink me-1"></i>執行取消分享
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 存取統計模態框 -->
+  <div class="modal fade" id="accessStatsModal" tabindex="-1" aria-labelledby="accessStatsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="accessStatsModalLabel">
+            <i class="fas fa-chart-bar me-2"></i>檔案存取統計
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            顯示檔案的存取統計資訊（基於 Google Drive 活動記錄）
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">選擇檔案</label>
+              <select id="stats-file-selector" class="form-select" onchange="loadFileAccessStats()">
+                <option value="">請選擇檔案...</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">時間範圍</label>
+              <select id="stats-time-range" class="form-select" onchange="loadFileAccessStats()">
+                <option value="7">最近 7 天</option>
+                <option value="30" selected>最近 30 天</option>
+                <option value="90">最近 90 天</option>
+              </select>
+            </div>
+          </div>
+          
+          <div id="access-stats-content">
+            <div class="text-center text-muted">
+              <i class="fas fa-chart-bar fa-3x mb-3"></i>
+              <p>請選擇檔案以查看存取統計</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- JS -->
   <script src="config.js"></script>
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js?v=20250108k"></script>
+  <script src="app.js?v=20250108l"></script>
 </body>
 </html>
