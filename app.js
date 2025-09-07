@@ -1301,39 +1301,84 @@ async function getUserInfo(accessToken) {
 
 // 更新已授權帳號顯示
 function updateAuthorizedAccountsDisplay() {
-  const container = document.getElementById('authorized-accounts');
-  if (!container) {
+  // 更新側邊欄的帳號顯示
+  const sidebarContainer = document.getElementById('authorized-accounts');
+  if (!sidebarContainer) {
     console.error('❌ 找不到 authorized-accounts 容器');
-    return;
+  } else {
+    updateAccountContainer(sidebarContainer, 'sidebar');
   }
   
-  console.log('🔍 更新帳號顯示，當前帳號數量:', authorizedAccounts.length);
+  // 更新模態框的帳號顯示 - 使用 querySelectorAll 來處理重複 ID
+  const modalContainers = document.querySelectorAll('#authorized-accounts');
+  if (modalContainers.length > 1) {
+    // 更新第二個容器（模態框中的）
+    updateAccountContainer(modalContainers[1], 'modal');
+  }
+}
+
+// 更新帳號容器的通用函數
+function updateAccountContainer(container, type) {
+  console.log(`🔍 更新${type}帳號顯示，當前帳號數量:`, authorizedAccounts.length);
   console.log('🔍 當前帳號:', currentAccount);
   
   container.innerHTML = '';
   
-  authorizedAccounts.forEach(account => {
+  console.log(`🔍 開始處理${type}帳號列表，數量:`, authorizedAccounts.length);
+  
+  authorizedAccounts.forEach((account, index) => {
+    console.log(`🔍 處理${type}帳號 ${index + 1}:`, account.name, account.email);
+    
     const accountDiv = document.createElement('div');
     accountDiv.className = `nav-item ${account.id === currentAccount?.id ? 'active' : ''}`;
-    accountDiv.innerHTML = `
-      <div class="nav-link" style="padding: 8px 16px;">
-        <div class="d-flex align-items-center">
-          <img src="${account.picture}" class="rounded-circle me-2" width="24" height="24" alt="${account.name}">
-          <div class="flex-grow-1">
-            <div class="user-name" style="font-size: 12px;">${account.name}</div>
-            <div class="user-status" style="font-size: 10px; opacity: 0.7;">${account.email}</div>
+    
+    // 根據類型決定顯示內容
+    if (type === 'modal') {
+      // 模態框中的顯示格式
+      accountDiv.innerHTML = `
+        <div class="nav-link" style="padding: 8px 16px;">
+          <div class="d-flex align-items-center">
+            <img src="${account.picture}" class="rounded-circle me-2" width="24" height="24" alt="${account.name}">
+            <div class="flex-grow-1">
+              <div class="user-name" style="font-size: 12px;">${account.name}</div>
+              <div class="user-status" style="font-size: 10px; opacity: 0.7;">${account.email}</div>
+              <div class="user-time" style="font-size: 10px; opacity: 0.5;">添加時間: ${new Date(account.addedAt).toLocaleString()}</div>
+            </div>
+            <div class="d-flex gap-1">
+              ${account.id === currentAccount?.id ? '<span class="badge bg-primary">當前</span>' : ''}
+              <button class="btn btn-sm btn-outline-danger" onclick="removeAccount('${account.id}')" style="padding: 2px 6px;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
           </div>
-          <button class="btn btn-sm btn-outline-danger" onclick="removeAccount('${account.id}')" style="padding: 2px 6px;">
-            <i class="fas fa-times"></i>
-          </button>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      // 側邊欄中的顯示格式
+      accountDiv.innerHTML = `
+        <div class="nav-link" style="padding: 8px 16px;">
+          <div class="d-flex align-items-center">
+            <img src="${account.picture}" class="rounded-circle me-2" width="24" height="24" alt="${account.name}">
+            <div class="flex-grow-1">
+              <div class="user-name" style="font-size: 12px;">${account.name}</div>
+              <div class="user-status" style="font-size: 10px; opacity: 0.7;">${account.email}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="removeAccount('${account.id}')" style="padding: 2px 6px;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
     
     // 點擊切換帳號
     accountDiv.onclick = () => switchAccount(account.id);
     container.appendChild(accountDiv);
+    
+    console.log(`✅ ${type}帳號 ${index + 1} 已添加到容器`);
   });
+  
+  console.log(`🔍 ${type}容器最終子元素數量:`, container.children.length);
   
   // 更新檔案頁面的帳號選擇器
   updateAccountSelector();
