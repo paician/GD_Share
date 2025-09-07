@@ -1,6 +1,44 @@
 // 等待 DOM 載入完成後再獲取憑證
 let CLIENT_ID, API_KEY;
 
+// 自定義 Alert 函數
+function showCustomAlert(title, message, type = 'info') {
+  const alertElement = document.getElementById('custom-alert');
+  const titleElement = document.getElementById('alert-title');
+  const bodyElement = document.getElementById('alert-body');
+  
+  if (!alertElement || !titleElement || !bodyElement) {
+    // 如果自定義 Alert 元素不存在，回退到原生 alert
+    alert(`${title}\n\n${message}`);
+    return;
+  }
+  
+  // 設置標題和內容
+  titleElement.textContent = title;
+  bodyElement.textContent = message;
+  
+  // 根據類型設置樣式
+  if (type === 'error') {
+    titleElement.style.color = '#dc3545';
+  } else if (type === 'success') {
+    titleElement.style.color = '#198754';
+  } else if (type === 'warning') {
+    titleElement.style.color = '#fd7e14';
+  } else {
+    titleElement.style.color = '#495057';
+  }
+  
+  // 顯示 Alert
+  alertElement.style.display = 'flex';
+}
+
+function hideCustomAlert() {
+  const alertElement = document.getElementById('custom-alert');
+  if (alertElement) {
+    alertElement.style.display = 'none';
+  }
+}
+
 function initializeCredentials() {
   CLIENT_ID = window.GOOGLE_CLIENT_ID || "";
   API_KEY = window.GOOGLE_API_KEY || "";
@@ -397,14 +435,64 @@ window.showPage = function(pageName) {
   if (pageName === 'dashboard') {
     updateDashboard();
     createCharts();
+  } else if (pageName === 'files') {
+    // 進入檔案清單頁面時自動載入和顯示檔案
+    loadAndDisplayFiles();
   } else if (pageName === 'statistics') {
     updateStatistics();
   } else if (pageName === 'profile') {
     updateProfile();
-  } else if (pageName === 'files') {
-    // 檔案頁面：自動應用當前篩選條件並顯示檔案
+  }
+}
+
+// 載入並顯示檔案（用於進入檔案清單頁面時自動執行）
+async function loadAndDisplayFiles() {
+  try {
+    // 檢查是否有已載入的檔案數據
+    if (fileData.allFiles && fileData.allFiles.length > 0) {
+      // 如果已有數據，直接應用篩選和顯示
+      applyFiltersAndSearch(fileData.allFiles);
+      return;
+    }
+    
+    // 如果沒有數據，檢查是否有授權的帳號
+    const authorizedAccounts = JSON.parse(localStorage.getItem('authorizedAccounts') || '[]');
+    if (authorizedAccounts.length === 0) {
+      // 沒有授權帳號，顯示提示
+      const fileListContainer = document.getElementById('file-list');
+      if (fileListContainer) {
+        fileListContainer.innerHTML = `
+          <div class="text-center py-5">
+            <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">請先新增 Google 帳號</h5>
+            <p class="text-muted">您需要先授權 Google 帳號才能查看檔案分享狀態</p>
+          </div>
+        `;
+      }
+      return;
+    }
+    
+    // 有授權帳號但沒有數據，自動載入
+    console.log('自動載入檔案數據...');
+    await loadAllDataAndUpdateDashboard();
+    
+    // 載入完成後顯示檔案
     if (fileData.allFiles && fileData.allFiles.length > 0) {
       applyFiltersAndSearch(fileData.allFiles);
+    }
+    
+  } catch (error) {
+    console.error('自動載入檔案失敗：', error);
+    const fileListContainer = document.getElementById('file-list');
+    if (fileListContainer) {
+      fileListContainer.innerHTML = `
+        <div class="text-center py-5">
+          <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+          <h5 class="text-warning">載入檔案失敗</h5>
+          <p class="text-muted">請檢查網路連線或重新登入</p>
+          <button class="btn btn-primary" onclick="loadAndDisplayFiles()">重試</button>
+        </div>
+      `;
     }
   }
 }
@@ -1516,34 +1604,6 @@ async function addFilePermission(fileId, email, role) {
   });
 }
 
-// 快速權限篩選函數
-function quickFilterPermission(permissionType) {
-  // 更新下拉選單
-  const sharePermissionSelect = document.getElementById('share-permission');
-  if (sharePermissionSelect) {
-    sharePermissionSelect.value = permissionType;
-  }
-  
-  // 更新按鈕狀態
-  updateQuickFilterButtons(permissionType);
-  
-  // 應用篩選
-  if (fileData.allFiles && fileData.allFiles.length > 0) {
-    applyFiltersAndSearch(fileData.allFiles);
-  }
-}
-
-// 更新快速篩選按鈕狀態
-function updateQuickFilterButtons(activeType) {
-  const buttons = document.querySelectorAll('.btn-group button');
-  buttons.forEach(button => {
-    button.classList.remove('active');
-    if (button.onclick && button.onclick.toString().includes(`'${activeType}'`)) {
-      button.classList.add('active');
-    }
-  });
-}
-
 // 檔案選擇相關函數
 function updateSelectedCount() {
   const checkboxes = document.querySelectorAll('.file-checkbox:checked');
@@ -2536,7 +2596,7 @@ function addNewAccount() {
       // 檢查是否已存在
       const existingAccount = authorizedAccounts.find(acc => acc.email === userInfo.email);
       if (existingAccount) {
-        alert(`⚠️ 此帳號已經授權過了！\n帳號：${userInfo.email}\n新增時間：${new Date(existingAccount.addedAt).toLocaleString()}`);
+        showCustomAlert('⚠️ 帳號已存在', `此帳號已經授權過了！\n帳號：${userInfo.email}\n新增時間：${new Date(existingAccount.addedAt).toLocaleString()}`, 'warning');
         return;
       }
       
@@ -2562,11 +2622,11 @@ function addNewAccount() {
       
       // 改善成功訊息
       const displayName = userInfo.name || userInfo.email;
-      alert(`✅ 成功新增帳號：${displayName}`);
+        showCustomAlert('✅ 新增成功', `成功新增帳號：${displayName}`, 'success');
       
     } catch (err) {
       console.error("新增帳號失敗：", err);
-      alert(`❌ 新增帳號失敗：${err.message}\n請檢查網路連線或重試`);
+      showCustomAlert('❌ 新增失敗', `新增帳號失敗：${err.message}\n請檢查網路連線或重試`, 'error');
     }
   };
   
@@ -2771,47 +2831,16 @@ async function switchAccount(accountId) {
   await loadAllDataAndUpdateDashboard();
 }
 
-// 自定義確認對話框
-function showConfirmDialog(message, callback) {
-  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-  document.getElementById('confirmMessage').textContent = message;
-  
-  // 清除之前的事件監聽器
-  const okButton = document.getElementById('confirmOk');
-  const cancelButton = document.getElementById('confirmCancel');
-  
-  // 移除舊的事件監聽器
-  okButton.replaceWith(okButton.cloneNode(true));
-  cancelButton.replaceWith(cancelButton.cloneNode(true));
-  
-  // 重新獲取元素
-  const newOkButton = document.getElementById('confirmOk');
-  const newCancelButton = document.getElementById('confirmCancel');
-  
-  newOkButton.onclick = () => {
-    modal.hide();
-    callback(true);
-  };
-  
-  newCancelButton.onclick = () => {
-    modal.hide();
-    callback(false);
-  };
-  
-  modal.show();
-}
-
 // 移除帳號 - 全局函數
 window.removeAccount = function(accountId) {
-  showConfirmDialog('確定要移除這個帳號嗎？', (confirmed) => {
-    if (confirmed) {
-      authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
-      
-      if (currentAccount?.id === accountId) {
-        currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
-      }
-      
-      saveAuthorizedAccounts();
+  if (confirm('確定要移除這個帳號嗎？')) {
+    authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
+    
+    if (currentAccount?.id === accountId) {
+      currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
+    }
+    
+    saveAuthorizedAccounts();
     updateAuthorizedAccountsDisplay();
     
     if (currentAccount) {
