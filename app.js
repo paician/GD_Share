@@ -13,6 +13,10 @@ let fileData = {
   allFiles: []
 };
 
+// 多帳號管理
+let authorizedAccounts = [];
+let currentAccount = null;
+
 const signinButton = document.getElementById("signin-button");
 const signoutButton = document.getElementById("signout-button");
 const loadFilesButton = document.getElementById("load-files");
@@ -145,25 +149,40 @@ loadFilesButton.onclick = async () => {
       return;
     }
 
+    // 應用篩選和搜尋
+    const filteredFiles = applyFiltersAndSearch(files);
+    
+    // 更新檔案計數
+    document.getElementById('file-count').textContent = filteredFiles.length;
+    
     fileList.innerHTML = "<ul class='list-group'></ul>";
     const ul = fileList.querySelector("ul");
 
-    files.forEach((file) => {
+    filteredFiles.forEach((file) => {
       const li = document.createElement("li");
       li.className = "list-group-item d-flex justify-content-between align-items-start";
+      
+      // 獲取檔案圖標
+      const fileIcon = getFileIcon(file.name);
+      
       li.innerHTML = `
         <div class="ms-2 me-auto">
           <div class="fw-bold">
-            <i class="fas fa-file me-2"></i>
+            <i class="${fileIcon} me-2"></i>
             <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
           </div>
           <small class="text-muted">
             <i class="fas fa-calendar me-1"></i>
             建立時間：${new Date(file.createdTime).toLocaleString()}
             ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
+            <br><i class="fas fa-share-alt me-1"></i>分享狀態：${getShareStatus(file)}
           </small>
         </div>
-        <span class="badge bg-primary rounded-pill">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
+        <div class="text-end">
+          <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
+          <br>
+          <small class="text-muted">${getFileAge(file.createdTime)}</small>
+        </div>
       `;
       ul.appendChild(li);
     });
@@ -361,16 +380,24 @@ function showPage(pageName) {
 
 // 創建圖表
 function createCharts() {
-  // 轉換率圖表
+  // 分享趨勢圖表 (基於真實數據)
   const conversionCtx = document.getElementById('conversionChart');
   if (conversionCtx) {
-    new Chart(conversionCtx, {
+    // 銷毀已存在的圖表
+    if (window.conversionChart) {
+      window.conversionChart.destroy();
+    }
+    
+    // 計算分享趨勢數據
+    const trendData = calculateShareTrend();
+    
+    window.conversionChart = new Chart(conversionCtx, {
       type: 'line',
       data: {
-        labels: ['10', '15', '13', '18', '22', '25', '28'],
+        labels: trendData.labels,
         datasets: [{
-          label: '轉換率',
-          data: [45, 52, 48, 61, 55, 67, 53.94],
+          label: '分享檔案數',
+          data: trendData.data,
           borderColor: '#6366f1',
           backgroundColor: 'rgba(99, 102, 241, 0.1)',
           borderWidth: 3,
@@ -392,10 +419,18 @@ function createCharts() {
         },
         scales: {
           x: {
-            display: false
+            display: true,
+            title: {
+              display: true,
+              text: '月份'
+            }
           },
           y: {
-            display: false
+            display: true,
+            title: {
+              display: true,
+              text: '檔案數量'
+            }
           }
         },
         elements: {
@@ -407,21 +442,30 @@ function createCharts() {
     });
   }
 
-  // 訂單圖表
+  // 檔案類型分佈圖表
   const ordersCtx = document.getElementById('ordersChart');
   if (ordersCtx) {
-    new Chart(ordersCtx, {
-      type: 'bar',
+    // 銷毀已存在的圖表
+    if (window.ordersChart) {
+      window.ordersChart.destroy();
+    }
+    
+    // 計算檔案類型分佈
+    const typeData = calculateFileTypeDistribution();
+    
+    window.ordersChart = new Chart(ordersCtx, {
+      type: 'doughnut',
       data: {
-        labels: ['May', 'June', 'July', 'August', 'September'],
+        labels: typeData.labels,
         datasets: [{
-          label: '訂單數量',
-          data: [130, 251, 180, 320, 1432],
-          backgroundColor: '#6366f1',
-          borderColor: '#6366f1',
-          borderWidth: 0,
-          borderRadius: 8,
-          borderSkipped: false,
+          label: '檔案數量',
+          data: typeData.data,
+          backgroundColor: [
+            '#6366f1', '#8b5cf6', '#a855f7', '#c084fc', '#d946ef',
+            '#ec4899', '#f43f5e', '#fb7185', '#fbbf24', '#f59e0b'
+          ],
+          borderColor: '#ffffff',
+          borderWidth: 2,
         }]
       },
       options: {
@@ -429,20 +473,61 @@ function createCharts() {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
-          }
-        },
-        scales: {
-          x: {
-            display: false
-          },
-          y: {
-            display: false
+            display: true,
+            position: 'bottom'
           }
         }
       }
     });
   }
+}
+
+// 計算分享趨勢數據
+function calculateShareTrend() {
+  if (fileData.allFiles.length === 0) {
+    return { labels: ['無數據'], data: [0] };
+  }
+  
+  // 按月份統計檔案
+  const monthlyData = {};
+  fileData.allFiles.forEach(file => {
+    const date = new Date(file.createdTime);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+  });
+  
+  // 排序並格式化
+  const sortedMonths = Object.keys(monthlyData).sort();
+  const labels = sortedMonths.map(month => {
+    const [year, month] = month.split('-');
+    return `${year}年${month}月`;
+  });
+  const data = sortedMonths.map(month => monthlyData[month]);
+  
+  return { labels, data };
+}
+
+// 計算檔案類型分佈
+function calculateFileTypeDistribution() {
+  if (fileData.allFiles.length === 0) {
+    return { labels: ['無數據'], data: [0] };
+  }
+  
+  const typeCount = {};
+  fileData.allFiles.forEach(file => {
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'unknown';
+    typeCount[extension] = (typeCount[extension] || 0) + 1;
+  });
+  
+  // 只顯示前8個最常見的類型
+  const sortedTypes = Object.entries(typeCount)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 8);
+  
+  const labels = sortedTypes.map(([type]) => type.toUpperCase());
+  const data = sortedTypes.map(([,count]) => count);
+  
+  return { labels, data };
 }
 
 // 更新儀表板數據
@@ -727,6 +812,375 @@ function updateProfile() {
   document.getElementById('last-login').value = new Date().toLocaleString();
 }
 
+// 應用篩選和搜尋
+function applyFiltersAndSearch(files) {
+  let filteredFiles = [...files];
+  
+  // 搜尋篩選
+  const searchTerm = document.getElementById('file-search').value.toLowerCase();
+  if (searchTerm) {
+    filteredFiles = filteredFiles.filter(file => 
+      file.name.toLowerCase().includes(searchTerm)
+    );
+  }
+  
+  // 時間範圍篩選
+  const timeRange = document.getElementById('time-range').value;
+  if (timeRange !== 'all') {
+    const now = new Date();
+    const filterDate = getFilterDate(now, timeRange);
+    filteredFiles = filteredFiles.filter(file => 
+      new Date(file.createdTime) >= filterDate
+    );
+  }
+  
+  // 檔案類型篩選
+  const fileType = document.getElementById('file-type').value;
+  if (fileType !== 'all') {
+    filteredFiles = filteredFiles.filter(file => {
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      return extension === fileType;
+    });
+  }
+  
+  // 排序
+  const sortBy = document.getElementById('sort-by').value;
+  filteredFiles.sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'date':
+        return new Date(b.createdTime) - new Date(a.createdTime);
+      case 'size':
+        return (parseInt(b.size) || 0) - (parseInt(a.size) || 0);
+      default:
+        return 0;
+    }
+  });
+  
+  return filteredFiles;
+}
+
+// 獲取篩選日期
+function getFilterDate(now, timeRange) {
+  const date = new Date(now);
+  switch (timeRange) {
+    case 'today':
+      date.setHours(0, 0, 0, 0);
+      return date;
+    case 'week':
+      date.setDate(date.getDate() - 7);
+      return date;
+    case 'month':
+      date.setMonth(date.getMonth() - 1);
+      return date;
+    case 'year':
+      date.setFullYear(date.getFullYear() - 1);
+      return date;
+    default:
+      return new Date(0);
+  }
+}
+
+// 獲取檔案圖標
+function getFileIcon(fileName) {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  const iconMap = {
+    'pdf': 'fas fa-file-pdf text-danger',
+    'doc': 'fas fa-file-word text-primary',
+    'docx': 'fas fa-file-word text-primary',
+    'xls': 'fas fa-file-excel text-success',
+    'xlsx': 'fas fa-file-excel text-success',
+    'ppt': 'fas fa-file-powerpoint text-warning',
+    'pptx': 'fas fa-file-powerpoint text-warning',
+    'png': 'fas fa-file-image text-info',
+    'jpg': 'fas fa-file-image text-info',
+    'jpeg': 'fas fa-file-image text-info',
+    'gif': 'fas fa-file-image text-info',
+    'mp4': 'fas fa-file-video text-purple',
+    'avi': 'fas fa-file-video text-purple',
+    'zip': 'fas fa-file-archive text-secondary',
+    'rar': 'fas fa-file-archive text-secondary'
+  };
+  return iconMap[extension] || 'fas fa-file text-muted';
+}
+
+// 獲取分享狀態
+function getShareStatus(file) {
+  if (file.permissions && file.permissions.length > 1) {
+    return `已分享給 ${file.permissions.length - 1} 人`;
+  }
+  return '未分享';
+}
+
+// 獲取檔案年齡
+function getFileAge(createdTime) {
+  const now = new Date();
+  const created = new Date(createdTime);
+  const diffTime = Math.abs(now - created);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) return '今天';
+  if (diffDays <= 7) return `${diffDays} 天前`;
+  if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} 週前`;
+  if (diffDays <= 365) return `${Math.ceil(diffDays / 30)} 個月前`;
+  return `${Math.ceil(diffDays / 365)} 年前`;
+}
+
+// 清除搜尋
+function clearSearch() {
+  document.getElementById('file-search').value = '';
+  // 重新載入檔案列表
+  if (fileData.allFiles.length > 0) {
+    const mode = document.querySelector('input[name="mode"]:checked').value;
+    const files = mode === 'sharedWithMe' ? fileData.sharedWithMe : fileData.sharedByMe;
+    displayFiles(files);
+  }
+}
+
+// 顯示檔案列表
+function displayFiles(files) {
+  const filteredFiles = applyFiltersAndSearch(files);
+  document.getElementById('file-count').textContent = filteredFiles.length;
+  
+  const fileList = document.getElementById('file-list');
+  fileList.innerHTML = "<ul class='list-group'></ul>";
+  const ul = fileList.querySelector("ul");
+
+  filteredFiles.forEach((file) => {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-start";
+    
+    const fileIcon = getFileIcon(file.name);
+    
+    li.innerHTML = `
+      <div class="ms-2 me-auto">
+        <div class="fw-bold">
+          <i class="${fileIcon} me-2"></i>
+          <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
+        </div>
+        <small class="text-muted">
+          <i class="fas fa-calendar me-1"></i>
+          建立時間：${new Date(file.createdTime).toLocaleString()}
+          ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
+          <br><i class="fas fa-share-alt me-1"></i>分享狀態：${getShareStatus(file)}
+        </small>
+      </div>
+      <div class="text-end">
+        <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
+        <br>
+        <small class="text-muted">${getFileAge(file.createdTime)}</small>
+      </div>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+// 多帳號管理功能
+function initializeMultiAccountSystem() {
+  // 從 localStorage 載入已授權的帳號
+  loadAuthorizedAccounts();
+  
+  // 綁定事件
+  document.getElementById('add-account-button').onclick = addNewAccount;
+  document.getElementById('manage-accounts-button').onclick = showAccountManagement;
+  
+  // 更新帳號列表顯示
+  updateAuthorizedAccountsDisplay();
+}
+
+// 載入已授權的帳號
+function loadAuthorizedAccounts() {
+  const saved = localStorage.getItem('authorizedAccounts');
+  if (saved) {
+    authorizedAccounts = JSON.parse(saved);
+    if (authorizedAccounts.length > 0) {
+      currentAccount = authorizedAccounts[0];
+    }
+  }
+}
+
+// 儲存已授權的帳號
+function saveAuthorizedAccounts() {
+  localStorage.setItem('authorizedAccounts', JSON.stringify(authorizedAccounts));
+}
+
+// 添加新帳號
+function addNewAccount() {
+  tokenClient.callback = async (resp) => {
+    if (resp.error) throw resp;
+    
+    try {
+      // 獲取用戶資訊
+      const userInfo = await getUserInfo(resp.access_token);
+      
+      // 檢查是否已存在
+      const existingAccount = authorizedAccounts.find(acc => acc.email === userInfo.email);
+      if (existingAccount) {
+        alert('此帳號已經授權過了！');
+        return;
+      }
+      
+      // 添加新帳號
+      const newAccount = {
+        id: Date.now().toString(),
+        email: userInfo.email,
+        name: userInfo.name,
+        picture: userInfo.picture,
+        accessToken: resp.access_token,
+        addedAt: new Date().toISOString()
+      };
+      
+      authorizedAccounts.push(newAccount);
+      currentAccount = newAccount;
+      saveAuthorizedAccounts();
+      
+      // 更新顯示
+      updateAuthorizedAccountsDisplay();
+      
+      // 載入數據
+      await loadAllDataAndUpdateDashboard();
+      
+      alert(`成功添加帳號：${userInfo.email}`);
+      
+    } catch (err) {
+      console.error("添加帳號失敗：", err);
+      alert("添加帳號失敗，請重試");
+    }
+  };
+  
+  tokenClient.requestAccessToken({ prompt: "select_account" });
+}
+
+// 獲取用戶資訊
+async function getUserInfo(accessToken) {
+  const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`);
+  return await response.json();
+}
+
+// 更新已授權帳號顯示
+function updateAuthorizedAccountsDisplay() {
+  const container = document.getElementById('authorized-accounts');
+  container.innerHTML = '';
+  
+  authorizedAccounts.forEach(account => {
+    const accountDiv = document.createElement('div');
+    accountDiv.className = `nav-item ${account.id === currentAccount?.id ? 'active' : ''}`;
+    accountDiv.innerHTML = `
+      <div class="nav-link" style="padding: 8px 16px;">
+        <div class="d-flex align-items-center">
+          <img src="${account.picture}" class="rounded-circle me-2" width="24" height="24" alt="${account.name}">
+          <div class="flex-grow-1">
+            <div class="user-name" style="font-size: 12px;">${account.name}</div>
+            <div class="user-status" style="font-size: 10px; opacity: 0.7;">${account.email}</div>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="removeAccount('${account.id}')" style="padding: 2px 6px;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // 點擊切換帳號
+    accountDiv.onclick = () => switchAccount(account.id);
+    container.appendChild(accountDiv);
+  });
+}
+
+// 切換帳號
+async function switchAccount(accountId) {
+  const account = authorizedAccounts.find(acc => acc.id === accountId);
+  if (!account) return;
+  
+  currentAccount = account;
+  
+  // 設置 token
+  gapi.client.setToken({ access_token: account.accessToken });
+  
+  // 更新顯示
+  updateAuthorizedAccountsDisplay();
+  
+  // 載入數據
+  await loadAllDataAndUpdateDashboard();
+}
+
+// 移除帳號
+function removeAccount(accountId) {
+  if (confirm('確定要移除這個帳號嗎？')) {
+    authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
+    
+    if (currentAccount?.id === accountId) {
+      currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
+    }
+    
+    saveAuthorizedAccounts();
+    updateAuthorizedAccountsDisplay();
+    
+    if (currentAccount) {
+      gapi.client.setToken({ access_token: currentAccount.accessToken });
+      loadAllDataAndUpdateDashboard();
+    } else {
+      // 沒有帳號了，清空數據
+      fileData = { sharedWithMe: [], sharedByMe: [], allFiles: [] };
+      updateDashboard();
+    }
+  }
+}
+
+// 顯示帳號管理
+function showAccountManagement() {
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.innerHTML = `
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">帳號管理</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <h6>已授權的帳號 (${authorizedAccounts.length})</h6>
+            <div class="list-group">
+              ${authorizedAccounts.map(account => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center">
+                    <img src="${account.picture}" class="rounded-circle me-3" width="40" height="40">
+                    <div>
+                      <div class="fw-bold">${account.name}</div>
+                      <small class="text-muted">${account.email}</small>
+                      <br><small class="text-muted">添加時間：${new Date(account.addedAt).toLocaleString()}</small>
+                    </div>
+                  </div>
+                  <div>
+                    ${account.id === currentAccount?.id ? '<span class="badge bg-success">當前</span>' : ''}
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeAccount('${account.id}')">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="text-center">
+            <button class="btn btn-primary" onclick="addNewAccount()">
+              <i class="fas fa-plus me-1"></i>添加新帳號
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+  
+  modal.addEventListener('hidden.bs.modal', () => {
+    document.body.removeChild(modal);
+  });
+}
+
 // 測試 API 連接
 async function testAPIConnection() {
   try {
@@ -792,6 +1246,11 @@ function updateDebugInfo() {
 window.onload = () => {
     gapiLoaded();
     gisLoaded();
+  
+    // 初始化多帳號系統
+    setTimeout(() => {
+      initializeMultiAccountSystem();
+    }, 1000);
     
     // 初始化圖表
     setTimeout(() => {
@@ -804,19 +1263,14 @@ window.onload = () => {
       updateDebugInfo();
     }, 2000);
   
-    // 檢查登入狀態，自動顯示登入/登出按鈕
+    // 檢查登入狀態
     setTimeout(() => {
-      const token = gapi.client.getToken();
-      if (token && token.access_token) {
-        // 已登入
-        updateSidebarUserStatus(true);
-        // 自動載入數據
+      if (currentAccount) {
+        // 有已授權的帳號，自動載入數據
+        gapi.client.setToken({ access_token: currentAccount.accessToken });
         loadAllDataAndUpdateDashboard();
-      } else {
-        // 未登入
-        updateSidebarUserStatus(false);
       }
       updateDebugInfo();
-    }, 1000); // 等待 GAPI 初始化完畢
+    }, 1500); // 等待 GAPI 初始化完畢
   };
   

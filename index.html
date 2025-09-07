@@ -445,24 +445,23 @@
         </div>
       </div>
       
-      <!-- 用戶狀態區域 -->
+      <!-- 多帳號管理區域 -->
       <div class="nav-section" style="margin-top: auto; padding-top: 20px;">
-        <div class="nav-item" id="user-status-section">
+        <div class="nav-title">帳號管理</div>
+        
+        <!-- 已授權帳號列表 -->
+        <div id="authorized-accounts" class="mb-3">
+          <!-- 動態生成已授權的帳號 -->
+        </div>
+        
+        <!-- 添加新帳號 -->
+        <div class="nav-item">
           <div class="nav-link" style="flex-direction: column; align-items: flex-start; padding: 16px;">
-            <div class="d-flex align-items-center w-100 mb-2">
-              <div class="user-avatar me-2">
-                <i class="fas fa-user-circle"></i>
-              </div>
-              <div class="user-info">
-                <div class="user-name" id="sidebar-user-name">未登入</div>
-                <div class="user-status" id="sidebar-user-status">點擊登入 Google</div>
-              </div>
-            </div>
-            <button id="signin-button" class="btn btn-primary btn-sm w-100" style="display: block;">
-              <i class="fas fa-sign-in-alt me-1"></i>登入 Google
+            <button id="add-account-button" class="btn btn-outline-primary btn-sm w-100 mb-2">
+              <i class="fas fa-plus me-1"></i>添加 Google 帳號
             </button>
-            <button id="signout-button" class="btn btn-outline-danger btn-sm w-100" style="display: none;">
-              <i class="fas fa-sign-out-alt me-1"></i>登出
+            <button id="manage-accounts-button" class="btn btn-outline-secondary btn-sm w-100">
+              <i class="fas fa-cog me-1"></i>管理帳號
             </button>
           </div>
         </div>
@@ -617,18 +616,72 @@
             <div class="chart-description">查看和管理您的 Google Drive 分享檔案</div>
           </div>
           <div class="p-4">
-            <div class="mb-3">
-              <label class="form-label">選擇要查詢的分享類型</label>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="mode" value="sharedWithMe" id="sharedWithMe" checked>
-                <label class="form-check-label" for="sharedWithMe">別人分享給我</label>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">選擇要查詢的分享類型</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="mode" value="sharedWithMe" id="sharedWithMe" checked>
+                  <label class="form-check-label" for="sharedWithMe">別人分享給我</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="mode" value="sharedByMe" id="sharedByMe">
+                  <label class="form-check-label" for="sharedByMe">我分享給別人</label>
+                </div>
               </div>
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="mode" value="sharedByMe" id="sharedByMe">
-                <label class="form-check-label" for="sharedByMe">我分享給別人</label>
+              <div class="col-md-6">
+                <label class="form-label">搜尋檔案</label>
+                <div class="input-group">
+                  <input type="text" id="file-search" class="form-control" placeholder="輸入檔案名稱搜尋...">
+                  <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </div>
             </div>
-            <button id="load-files" class="btn btn-primary">載入分享檔案</button>
+            
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label">時間範圍</label>
+                <select id="time-range" class="form-select">
+                  <option value="all">全部時間</option>
+                  <option value="today">今天</option>
+                  <option value="week">本週</option>
+                  <option value="month">本月</option>
+                  <option value="year">本年</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">檔案類型</label>
+                <select id="file-type" class="form-select">
+                  <option value="all">全部類型</option>
+                  <option value="pdf">PDF</option>
+                  <option value="doc">Word</option>
+                  <option value="xls">Excel</option>
+                  <option value="ppt">PowerPoint</option>
+                  <option value="png">圖片</option>
+                  <option value="jpg">圖片</option>
+                  <option value="mp4">影片</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">排序方式</label>
+                <select id="sort-by" class="form-select">
+                  <option value="name">檔案名稱</option>
+                  <option value="date">建立時間</option>
+                  <option value="size">檔案大小</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <button id="load-files" class="btn btn-primary">
+                <i class="fas fa-sync me-1"></i>載入分享檔案
+              </button>
+              <div class="text-muted">
+                <span id="file-count">0</span> 個檔案
+              </div>
+            </div>
+            
             <div id="file-list" class="mt-4"></div>
           </div>
         </div>
@@ -680,15 +733,15 @@
           <div class="p-4">
             <p class="text-muted">設定功能開發中...</p>
           </div>
+          </div>
         </div>
-      </div>
 
       <div id="profile-page" class="page-content" style="display: none;">
         <div class="chart-card">
           <div class="chart-header">
             <div class="chart-title">個人資料</div>
             <div class="chart-description">查看和管理您的帳戶資訊</div>
-          </div>
+              </div>
           <div class="p-4">
             <p class="text-muted">個人資料功能開發中...</p>
           </div>
