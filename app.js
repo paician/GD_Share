@@ -1059,6 +1059,18 @@ function updateProfile() {
 function applyFiltersAndSearch(files) {
   let filteredFiles = [...files];
   
+  // 分享類型篩選（我分享給別人 vs 別人分享給我）
+  const mode = document.querySelector('input[name="mode"]:checked')?.value;
+  if (mode === 'sharedWithMe') {
+    filteredFiles = filteredFiles.filter(file => 
+      fileData.sharedWithMe.some(sharedFile => sharedFile.id === file.id)
+    );
+  } else if (mode === 'sharedByMe') {
+    filteredFiles = filteredFiles.filter(file => 
+      fileData.sharedByMe.some(sharedFile => sharedFile.id === file.id)
+    );
+  }
+  
   // 搜尋篩選
   const searchTerm = document.getElementById('file-search').value.toLowerCase();
   if (searchTerm) {
@@ -1109,6 +1121,9 @@ function applyFiltersAndSearch(files) {
         return 0;
     }
   });
+  
+  // 自動顯示篩選後的檔案
+  displayFiles(filteredFiles);
   
   return filteredFiles;
 }
