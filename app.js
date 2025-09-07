@@ -1,15 +1,88 @@
 // 等待 DOM 載入完成後再獲取憑證
 let CLIENT_ID, API_KEY;
 
-// 自定義 Alert 函數
-function showCustomAlert(title, message, type = 'info') {
-  const alertElement = document.getElementById('custom-alert');
-  const titleElement = document.getElementById('alert-title');
-  const bodyElement = document.getElementById('alert-body');
+// Bootstrap Alert 函數
+function showBootstrapAlert(message, type = 'info', duration = 5000) {
+  const alertElement = document.getElementById('bootstrap-alert');
+  const contentElement = document.getElementById('alert-content');
   
-  if (!alertElement || !titleElement || !bodyElement) {
-    // 如果自定義 Alert 元素不存在，回退到原生 alert
-    alert(`${title}\n\n${message}`);
+  if (!alertElement || !contentElement) {
+    // 如果 Bootstrap Alert 元素不存在，回退到原生 alert
+    alert(message);
+    return;
+  }
+  
+  // 清除之前的樣式類
+  alertElement.className = 'alert alert-dismissible fade';
+  
+  // 根據類型設置樣式
+  let alertClass = 'alert-info';
+  let iconClass = 'fas fa-info-circle';
+  
+  switch (type) {
+    case 'success':
+      alertClass = 'alert-success';
+      iconClass = 'fas fa-check-circle';
+      break;
+    case 'error':
+    case 'danger':
+      alertClass = 'alert-danger';
+      iconClass = 'fas fa-exclamation-circle';
+      break;
+    case 'warning':
+      alertClass = 'alert-warning';
+      iconClass = 'fas fa-exclamation-triangle';
+      break;
+    case 'info':
+    default:
+      alertClass = 'alert-info';
+      iconClass = 'fas fa-info-circle';
+      break;
+  }
+  
+  // 設置樣式和內容
+  alertElement.classList.add(alertClass);
+  contentElement.innerHTML = `
+    <i class="${iconClass} me-2"></i>
+    <span>${message}</span>
+  `;
+  
+  // 顯示 Alert
+  alertElement.style.display = 'block';
+  alertElement.classList.add('show');
+  
+  // 自動隱藏
+  if (duration > 0) {
+    setTimeout(() => {
+      hideBootstrapAlert();
+    }, duration);
+  }
+}
+
+function hideBootstrapAlert() {
+  const alertElement = document.getElementById('bootstrap-alert');
+  if (alertElement) {
+    alertElement.classList.remove('show');
+    setTimeout(() => {
+      alertElement.style.display = 'none';
+    }, 150); // 等待 fade 動畫完成
+  }
+}
+
+// Bootstrap Confirm Modal 函數
+function showBootstrapConfirm(title, message, onConfirm, onCancel = null) {
+  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+  const titleElement = document.getElementById('confirmModalLabel');
+  const bodyElement = document.getElementById('confirmModalBody');
+  const confirmBtn = document.getElementById('confirmModalBtn');
+  
+  if (!modal || !titleElement || !bodyElement || !confirmBtn) {
+    // 如果 Bootstrap Modal 元素不存在，回退到原生 confirm
+    if (confirm(`${title}\n\n${message}`)) {
+      onConfirm();
+    } else if (onCancel) {
+      onCancel();
+    }
     return;
   }
   
@@ -17,26 +90,23 @@ function showCustomAlert(title, message, type = 'info') {
   titleElement.textContent = title;
   bodyElement.textContent = message;
   
-  // 根據類型設置樣式
-  if (type === 'error') {
-    titleElement.style.color = '#dc3545';
-  } else if (type === 'success') {
-    titleElement.style.color = '#198754';
-  } else if (type === 'warning') {
-    titleElement.style.color = '#fd7e14';
-  } else {
-    titleElement.style.color = '#495057';
+  // 設置確認按鈕事件
+  confirmBtn.onclick = () => {
+    modal.hide();
+    onConfirm();
+  };
+  
+  // 設置取消事件
+  const cancelBtn = document.querySelector('#confirmModal .btn-secondary');
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      modal.hide();
+      if (onCancel) onCancel();
+    };
   }
   
-  // 顯示 Alert
-  alertElement.style.display = 'flex';
-}
-
-function hideCustomAlert() {
-  const alertElement = document.getElementById('custom-alert');
-  if (alertElement) {
-    alertElement.style.display = 'none';
-  }
+  // 顯示 Modal
+  modal.show();
 }
 
 function initializeCredentials() {
@@ -1459,17 +1529,17 @@ function addShareRecipient() {
   const email = emailInput.value.trim();
   
   if (!email) {
-    alert('請輸入電子郵件地址');
+    showBootstrapAlert('請輸入電子郵件地址', 'warning');
     return;
   }
   
   if (!isValidEmail(email)) {
-    alert('請輸入有效的電子郵件地址');
+    showBootstrapAlert('請輸入有效的電子郵件地址', 'warning');
     return;
   }
   
   if (shareRecipients.includes(email)) {
-    alert('此電子郵件地址已存在');
+    showBootstrapAlert('此電子郵件地址已存在', 'warning');
     return;
   }
   
@@ -1515,12 +1585,12 @@ function isValidEmail(email) {
 // 執行批次權限修改
 async function executeBatchPermissionUpdate() {
   if (selectedFiles.length === 0) {
-    alert('請選擇要修改的檔案');
+    showBootstrapAlert('請選擇要修改的檔案', 'warning');
     return;
   }
   
   if (shareRecipients.length === 0) {
-    alert('請新增至少一個分享對象');
+    showBootstrapAlert('請新增至少一個分享對象', 'warning');
     return;
   }
   
@@ -1554,7 +1624,7 @@ async function executeBatchPermissionUpdate() {
       }
     }
     
-    alert(`批次修改完成！\n成功：${successCount} 個檔案\n失敗：${errorCount} 個檔案`);
+        showBootstrapAlert(`批次修改完成！\n成功：${successCount} 個檔案\n失敗：${errorCount} 個檔案`, 'success');
     
     // 關閉模態框
     const modal = bootstrap.Modal.getInstance(document.getElementById('batchEditModal'));
@@ -1565,7 +1635,7 @@ async function executeBatchPermissionUpdate() {
     
   } catch (error) {
     console.error('批次修改失敗：', error);
-    alert('批次修改失敗：' + error.message);
+      showBootstrapAlert('批次修改失敗：' + error.message, 'error');
   }
 }
 
@@ -1803,14 +1873,14 @@ function updateRemoveSelectedRecipients() {
 
 async function executeBatchRemovePermissions() {
   if (removeSelectedFiles.length === 0) {
-    alert('請選擇要取消分享的檔案');
+    showBootstrapAlert('請選擇要取消分享的檔案', 'warning');
     return;
   }
   
   const removeOption = document.querySelector('input[name="removeOption"]:checked').value;
   
   if (removeOption === 'selected' && removeSelectedRecipients.length === 0) {
-    alert('請選擇要取消的分享對象');
+    showBootstrapAlert('請選擇要取消的分享對象', 'warning');
     return;
   }
   
@@ -1840,7 +1910,7 @@ async function executeBatchRemovePermissions() {
       }
     }
     
-    alert(`取消分享完成！\n成功：${successCount} 個檔案\n失敗：${errorCount} 個檔案`);
+        showBootstrapAlert(`取消分享完成！\n成功：${successCount} 個檔案\n失敗：${errorCount} 個檔案`, 'success');
     
     // 關閉模態框
     const modal = bootstrap.Modal.getInstance(document.getElementById('batchRemoveModal'));
@@ -1851,7 +1921,7 @@ async function executeBatchRemovePermissions() {
     
   } catch (error) {
     console.error('批次取消分享失敗：', error);
-    alert('批次取消分享失敗：' + error.message);
+      showBootstrapAlert('批次取消分享失敗：' + error.message, 'error');
   }
 }
 
@@ -2596,7 +2666,7 @@ function addNewAccount() {
       // 檢查是否已存在
       const existingAccount = authorizedAccounts.find(acc => acc.email === userInfo.email);
       if (existingAccount) {
-        showCustomAlert('⚠️ 帳號已存在', `此帳號已經授權過了！\n帳號：${userInfo.email}\n新增時間：${new Date(existingAccount.addedAt).toLocaleString()}`, 'warning');
+        showBootstrapAlert(`此帳號已經授權過了！\n帳號：${userInfo.email}\n新增時間：${new Date(existingAccount.addedAt).toLocaleString()}`, 'warning');
         return;
       }
       
@@ -2622,11 +2692,11 @@ function addNewAccount() {
       
       // 改善成功訊息
       const displayName = userInfo.name || userInfo.email;
-        showCustomAlert('✅ 新增成功', `成功新增帳號：${displayName}`, 'success');
+        showBootstrapAlert(`成功新增帳號：${displayName}`, 'success');
       
     } catch (err) {
       console.error("新增帳號失敗：", err);
-      showCustomAlert('❌ 新增失敗', `新增帳號失敗：${err.message}\n請檢查網路連線或重試`, 'error');
+      showBootstrapAlert(`新增帳號失敗：${err.message}\n請檢查網路連線或重試`, 'error');
     }
   };
   
@@ -2833,25 +2903,35 @@ async function switchAccount(accountId) {
 
 // 移除帳號 - 全局函數
 window.removeAccount = function(accountId) {
-  if (confirm('確定要移除這個帳號嗎？')) {
-    authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
-    
-    if (currentAccount?.id === accountId) {
-      currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
+  const account = authorizedAccounts.find(acc => acc.id === accountId);
+  const accountName = account ? (account.name || account.email) : '此帳號';
+  
+  showBootstrapConfirm(
+    '移除帳號',
+    `確定要移除 ${accountName} 嗎？\n\n移除後將無法存取該帳號的檔案資料。`,
+    () => {
+      // 確認移除
+      authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
+      
+      if (currentAccount?.id === accountId) {
+        currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
+      }
+      
+      saveAuthorizedAccounts();
+      updateAuthorizedAccountsDisplay();
+      
+      if (currentAccount) {
+        gapi.client.setToken({ access_token: currentAccount.accessToken });
+        loadAllDataAndUpdateDashboard();
+        showBootstrapAlert(`已移除 ${accountName}`, 'success');
+      } else {
+        // 沒有帳號了，清空資料
+        fileData = { sharedWithMe: [], sharedByMe: [], allFiles: [] };
+        updateDashboard();
+        showBootstrapAlert('已移除所有帳號', 'info');
+      }
     }
-    
-    saveAuthorizedAccounts();
-    updateAuthorizedAccountsDisplay();
-    
-    if (currentAccount) {
-      gapi.client.setToken({ access_token: currentAccount.accessToken });
-      loadAllDataAndUpdateDashboard();
-    } else {
-      // 沒有帳號了，清空資料
-      fileData = { sharedWithMe: [], sharedByMe: [], allFiles: [] };
-      updateDashboard();
-    }
-  }
+  );
 }
 
 // 顯示帳號管理
@@ -2933,7 +3013,7 @@ window.clearAllData = function() {
     updateDashboard();
     
     // 顯示成功訊息
-    alert('✅ 所有本機資料已清除！\n\n頁面將重新載入以確保完全重置。');
+    showBootstrapAlert('所有本機資料已清除！\n\n頁面將重新載入以確保完全重置。', 'success', 3000);
     
     // 重新載入頁面
     setTimeout(() => {

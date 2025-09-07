@@ -398,90 +398,34 @@
     border: 1px solid rgba(99, 102, 241, 0.2);
   }
 
-  /* 自定義 Alert 樣式 */
-  .custom-alert {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .custom-alert-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-
-  .custom-alert-content {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    overflow: hidden;
-  }
-
-  .custom-alert-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 20px 0 20px;
-    border-bottom: 1px solid #e9ecef;
-  }
-
-  .custom-alert-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #495057;
-  }
-
-  .custom-alert-close {
-    background: none;
+  /* Bootstrap Alert 自定義樣式 */
+  #bootstrap-alert {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border: none;
-    font-size: 1.5rem;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
   }
 
-  .custom-alert-close:hover {
-    background-color: #f8f9fa;
-    color: #495057;
+  #bootstrap-alert.alert-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border-left: 4px solid #198754;
   }
 
-  .custom-alert-body {
-    padding: 20px;
-    font-size: 1rem;
-    line-height: 1.5;
-    color: #495057;
-    white-space: pre-line;
+  #bootstrap-alert.alert-danger {
+    background-color: #f8d7da;
+    color: #842029;
+    border-left: 4px solid #dc3545;
   }
 
-  .custom-alert-footer {
-    padding: 0 20px 20px 20px;
-    text-align: right;
+  #bootstrap-alert.alert-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+    border-left: 4px solid #fd7e14;
   }
 
-  .custom-alert-footer .btn {
-    min-width: 80px;
+  #bootstrap-alert.alert-info {
+    background-color: #d1ecf1;
+    color: #055160;
+    border-left: 4px solid #0dcaf0;
   }
 </style>
 
@@ -1105,21 +1049,27 @@
     </div>
   </div>
 
-  <!-- 自定義 Alert 組件 -->
-  <div id="custom-alert" class="custom-alert" style="display: none;">
-    <div class="custom-alert-overlay"></div>
-    <div class="custom-alert-content">
-      <div class="custom-alert-header">
-        <h5 class="custom-alert-title" id="alert-title">提示</h5>
-        <button type="button" class="custom-alert-close" onclick="hideCustomAlert()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="custom-alert-body" id="alert-body">
-        訊息內容
-      </div>
-      <div class="custom-alert-footer">
-        <button type="button" class="btn btn-primary" onclick="hideCustomAlert()">確定</button>
+  <!-- Bootstrap Alert 組件 -->
+  <div id="bootstrap-alert" class="alert alert-dismissible fade" role="alert" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;">
+    <div id="alert-content"></div>
+    <button type="button" class="btn-close" onclick="hideBootstrapAlert()"></button>
+  </div>
+
+  <!-- Bootstrap Confirm Modal -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalLabel">確認操作</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">
+          您確定要執行此操作嗎？
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="confirmModalBtn">確定</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1130,6 +1080,6 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js?v=20250108t"></script>
+  <script src="app.js?v=20250108u"></script>
 </body>
 </html>
