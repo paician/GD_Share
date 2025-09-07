@@ -172,5 +172,4 @@ async function handleRequest(request) {
 2. **Google 授權**：真正的安全來自 Google 的授權機制
 3. **簡單有效**：阻止大部分非瀏覽器訪問
 
->>>>>>> efa983dae3288edd6c2e1d95fef8b478b5919740
 如果你需要更強的安全保護，可以考慮使用 Cloudflare Workers。

@@ -130,5 +130,4 @@ https://your-project.pages.dev/ (Cloudflare Pages 域名)
 - [ ] 配置授權域名
 - [ ] 設置環境變數
 - [ ] 測試部署
->>>>>>> efa983dae3288edd6c2e1d95fef8b478b5919740
 - [ ] 設置監控警報

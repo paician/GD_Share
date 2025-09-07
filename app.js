@@ -421,18 +421,19 @@ window.showPage = function(pageName) {
 
 // 創建圖表
 function createCharts() {
-  // 分享趨勢圖表 (基於真實數據)
-  const conversionCtx = document.getElementById('conversionChart');
-  if (conversionCtx) {
-    // 銷毀已存在的圖表
-    if (window.conversionChart && typeof window.conversionChart.destroy === 'function') {
-      window.conversionChart.destroy();
-    }
+  // 分享趨勢圖表 (基於真實數據) - 處理重複的 ID
+  const conversionElements = document.querySelectorAll('#conversionChart');
+  conversionElements.forEach((conversionCtx, index) => {
+    if (conversionCtx) {
+      // 銷毀已存在的圖表
+      if (window.conversionChart && typeof window.conversionChart.destroy === 'function') {
+        window.conversionChart.destroy();
+      }
     
-    // 計算分享趨勢數據
-    const trendData = calculateShareTrend();
-    
-    window.conversionChart = new Chart(conversionCtx, {
+      // 計算分享趨勢數據
+      const trendData = calculateShareTrend();
+      
+      window.conversionChart = new Chart(conversionCtx, {
       type: 'line',
       data: {
         labels: trendData.labels,
@@ -480,16 +481,18 @@ function createCharts() {
           }
         }
       }
-    });
-  }
-
-  // 檔案類型分佈圖表
-  const ordersCtx = document.getElementById('ordersChart');
-  if (ordersCtx) {
-    // 銷毀已存在的圖表
-    if (window.ordersChart && typeof window.ordersChart.destroy === 'function') {
-      window.ordersChart.destroy();
+      });
     }
+  });
+
+  // 檔案類型分佈圖表 - 處理重複的 ID
+  const ordersElements = document.querySelectorAll('#ordersChart');
+  ordersElements.forEach((ordersCtx, index) => {
+    if (ordersCtx) {
+      // 銷毀已存在的圖表
+      if (window.ordersChart && typeof window.ordersChart.destroy === 'function') {
+        window.ordersChart.destroy();
+      }
     
     // 計算檔案類型分佈
     const typeData = calculateFileTypeDistribution();
@@ -519,8 +522,9 @@ function createCharts() {
           }
         }
       }
-    });
-  }
+      });
+    }
+  });
 }
 
 // 計算分享趨勢數據

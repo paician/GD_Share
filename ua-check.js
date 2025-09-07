@@ -200,5 +200,4 @@
     checkUserAgent();
   }
   
->>>>>>> efa983dae3288edd6c2e1d95fef8b478b5919740
 })();
