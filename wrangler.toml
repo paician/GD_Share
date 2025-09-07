@@ -1,8 +1,0 @@
-name = "dashboardkit"
-compatibility_date = "2024-01-08"
-
-[env.production]
-vars = { GOOGLE_CLIENT_ID = "", GOOGLE_API_KEY = "" }
-
-[env.preview]
-vars = { GOOGLE_CLIENT_ID = "", GOOGLE_API_KEY = "" }
