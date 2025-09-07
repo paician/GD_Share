@@ -1,5 +1,18 @@
-const CLIENT_ID = "799708745031-5j43u590lpnds963sdcknchqicbod3bn.apps.googleusercontent.com"; // 用你的 GCP OAuth 2.0 網頁 client_id 替換
-const API_KEY = ""; // 如果需要 API Key，請在這裡填入
+// 從環境變數獲取 API 憑證 (安全)
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || window.GOOGLE_CLIENT_ID || "";
+const API_KEY = process.env.GOOGLE_API_KEY || window.GOOGLE_API_KEY || "";
+
+// 檢查憑證是否已設置
+if (!CLIENT_ID) {
+  console.error("❌ GOOGLE_CLIENT_ID 未設置！請檢查環境變數或配置。");
+  document.body.innerHTML = `
+    <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+      <h2 style="color: #dc3545;">⚠️ 配置錯誤</h2>
+      <p>Google API 憑證未正確設置。請聯繫管理員或檢查配置。</p>
+      <p><small>錯誤：GOOGLE_CLIENT_ID 未設置</small></p>
+    </div>
+  `;
+}
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly";
 
@@ -1403,6 +1416,40 @@ function showAccountManagement() {
   });
 }
 
+// 清除所有本地數據 - 全局函數
+window.clearAllData = function() {
+  if (confirm('⚠️ 確定要清除所有本地數據嗎？\n\n這將包括：\n- 所有綁定的 Google 帳號\n- 所有檔案數據\n- 所有設定\n\n此操作無法復原！')) {
+    // 清除 localStorage
+    localStorage.removeItem('authorizedAccounts');
+    
+    // 重置全局變數
+    authorizedAccounts = [];
+    currentAccount = null;
+    fileData = {
+      sharedWithMe: [],
+      sharedByMe: [],
+      allFiles: []
+    };
+    
+    // 清除 gapi token
+    if (gapi.client.getToken()) {
+      gapi.client.setToken(null);
+    }
+    
+    // 更新顯示
+    updateAuthorizedAccountsDisplay();
+    updateDashboard();
+    
+    // 顯示成功訊息
+    alert('✅ 所有本地數據已清除！\n\n頁面將重新載入以確保完全重置。');
+    
+    // 重新載入頁面
+    setTimeout(() => {
+      location.reload();
+    }, 1000);
+  }
+};
+
 // 測試 API 連接 - 全局函數
 window.testAPIConnection = async function() {
   try {
@@ -1466,7 +1513,7 @@ function updateDebugInfo() {
 
 // 初始化 Google API 和身份驗證
 window.onload = () => {
-    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108d (管理員後台)");
+    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108f (個人版)");
     console.log("✅ showPage 函數已定義:", typeof window.showPage);
     console.log("✅ 元素檢查:", {
       signinButton: !!signinButton,
