@@ -1,17 +1,29 @@
-// 從環境變數獲取 API 憑證 (安全)
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || window.GOOGLE_CLIENT_ID || "";
-const API_KEY = process.env.GOOGLE_API_KEY || window.GOOGLE_API_KEY || "";
+// 等待 DOM 載入完成後再獲取憑證
+let CLIENT_ID, API_KEY;
 
-// 檢查憑證是否已設置
-if (!CLIENT_ID) {
-  console.error("❌ GOOGLE_CLIENT_ID 未設置！請檢查環境變數或配置。");
-  document.body.innerHTML = `
-    <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
-      <h2 style="color: #dc3545;">⚠️ 配置錯誤</h2>
-      <p>Google API 憑證未正確設置。請聯繫管理員或檢查配置。</p>
-      <p><small>錯誤：GOOGLE_CLIENT_ID 未設置</small></p>
-    </div>
-  `;
+function initializeCredentials() {
+  CLIENT_ID = window.GOOGLE_CLIENT_ID || "";
+  API_KEY = window.GOOGLE_API_KEY || "";
+  
+  console.log("🔍 檢查憑證設置...");
+  console.log("CLIENT_ID:", CLIENT_ID ? "已設置" : "未設置");
+  console.log("API_KEY:", API_KEY ? "已設置" : "未設置");
+  
+  if (!CLIENT_ID) {
+    console.error("❌ GOOGLE_CLIENT_ID 未設置！請檢查 config.js 檔案。");
+    document.body.innerHTML = `
+      <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+        <h2 style="color: #dc3545;">⚠️ 配置錯誤</h2>
+        <p>Google API 憑證未正確設置。請檢查 config.js 檔案。</p>
+        <p><small>錯誤：GOOGLE_CLIENT_ID 未設置</small></p>
+        <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 10px;">重新載入</button>
+      </div>
+    `;
+    return false;
+  } else {
+    console.log("✅ Google API 憑證已載入");
+    return true;
+  }
 }
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly";
@@ -1513,7 +1525,14 @@ function updateDebugInfo() {
 
 // 初始化 Google API 和身份驗證
 window.onload = () => {
-    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108f (個人版)");
+    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108h (個人版)");
+    
+    // 首先初始化憑證
+    if (!initializeCredentials()) {
+      console.error("❌ 憑證初始化失敗，停止初始化");
+      return;
+    }
+    
     console.log("✅ showPage 函數已定義:", typeof window.showPage);
     console.log("✅ 元素檢查:", {
       signinButton: !!signinButton,
