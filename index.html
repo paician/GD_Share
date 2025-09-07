@@ -579,6 +579,14 @@
               <div><strong>登入狀態:</strong> <span id="login-status">未登入</span></div>
               <div><strong>權限範圍:</strong> <span id="scope-status">檢查中...</span></div>
               <div><strong>檔案數據:</strong> <span id="file-data-status">無</span></div>
+              <div class="mt-2">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="testAPIConnection()">
+                  <i class="fas fa-flask me-1"></i>測試 API
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="loadAllDataAndUpdateDashboard()">
+                  <i class="fas fa-sync me-1"></i>重新載入
+                </button>
+              </div>
             </div>
           </div>
           <div id="data-status" class="text-muted">

@@ -51,6 +51,9 @@ signinButton.onclick = () => {
   tokenClient.callback = async (resp) => {
     if (resp.error) throw resp;
     
+    // 設置 token 到 gapi client
+    gapi.client.setToken(resp);
+    
     // 更新側邊欄用戶狀態
     updateSidebarUserStatus(true);
     
@@ -99,7 +102,7 @@ loadFilesButton.onclick = async () => {
       console.log("載入分享給我的檔案...");
       const response = await gapi.client.drive.files.list({
         pageSize: 100,
-        q: "sharedWithMe",
+        q: "sharedWithMe=true",
         fields: "files(id, name, webViewLink, createdTime, permissions, size, mimeType)"
       });
       console.log("分享給我回應：", response);
@@ -111,7 +114,7 @@ loadFilesButton.onclick = async () => {
       console.log("載入我分享的檔案...");
       const response = await gapi.client.drive.files.list({
         pageSize: 100,
-        q: "trashed = false",
+        q: "trashed = false and 'me' in owners",
         fields: "files(id, name, webViewLink, createdTime, permissions, owners, size, mimeType)"
       });
       console.log("我分享的回應：", response);
@@ -242,17 +245,18 @@ async function loadAllDataAndUpdateDashboard() {
     console.log("載入分享給我的檔案...");
     const sharedWithMeResponse = await gapi.client.drive.files.list({
       pageSize: 100,
-      q: "sharedWithMe",
+      q: "sharedWithMe=true",
       fields: "files(id, name, webViewLink, createdTime, permissions, size, mimeType)"
     });
     fileData.sharedWithMe = sharedWithMeResponse.result.files || [];
     console.log("分享給我檔案數量：", fileData.sharedWithMe.length);
+    console.log("分享給我檔案詳情：", fileData.sharedWithMe);
     
     // 載入我分享的檔案
     console.log("載入我分享的檔案...");
     const sharedByMeResponse = await gapi.client.drive.files.list({
       pageSize: 100,
-      q: "trashed = false",
+      q: "trashed = false and 'me' in owners",
       fields: "files(id, name, webViewLink, createdTime, permissions, owners, size, mimeType)"
     });
     const allMyFiles = sharedByMeResponse.result.files || [];
@@ -260,6 +264,7 @@ async function loadAllDataAndUpdateDashboard() {
       file.permissions && file.permissions.some(p => p.role !== "owner")
     );
     console.log("我分享的檔案數量：", fileData.sharedByMe.length);
+    console.log("我分享的檔案詳情：", fileData.sharedByMe);
     
     // 合併所有檔案
     fileData.allFiles = [...fileData.sharedWithMe, ...fileData.sharedByMe];
@@ -705,6 +710,23 @@ function updateProfile() {
   document.getElementById('email-address').value = 'user@gmail.com';
   document.getElementById('account-created').value = '2020-01-01';
   document.getElementById('last-login').value = new Date().toLocaleString();
+}
+
+// 測試 API 連接
+async function testAPIConnection() {
+  try {
+    console.log("測試 API 連接...");
+    const response = await gapi.client.drive.files.list({
+      pageSize: 5,
+      q: "trashed = false",
+      fields: "files(id, name)"
+    });
+    console.log("API 測試成功：", response);
+    return true;
+  } catch (err) {
+    console.error("API 測試失敗：", err);
+    return false;
+  }
 }
 
 // 調試功能
