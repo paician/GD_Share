@@ -3,75 +3,638 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Google Drive 分享檔案查看器</title>
-  <!-- Bootstrap & Black Dashboard -->
-<!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-<!-- Black Dashboard -->
-<link href="https://demos.creative-tim.com/black-dashboard/assets/css/black-dashboard.css?v=1.0.0" rel="stylesheet" />
-<link href="https://demos.creative-tim.com/black-dashboard/assets/css/nucleo-icons.css" rel="stylesheet" />
+  <title>DashboardKit - 現代化儀表板</title>
+  <!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<!-- Font Awesome -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --sidebar-bg: #1a1d29;
+    --sidebar-text: #ffffff;
+    --sidebar-hover: #2d3142;
+    --sidebar-active: #6366f1;
+    --main-bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --purple-primary: #6366f1;
+    --purple-light: #a5b4fc;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--main-bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+
+  .dashboard-container {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* 側邊欄樣式 */
+  .sidebar {
+    width: 280px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    overflow-y: auto;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--purple-primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+  }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--sidebar-text);
+  }
+
+  .nav-section {
+    padding: 20px 0;
+  }
+
+  .nav-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sidebar-text);
+    opacity: 0.6;
+    padding: 0 20px 12px;
+  }
+
+  .nav-item {
+    margin: 2px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .nav-item:hover {
+    background: var(--sidebar-hover);
+  }
+
+  .nav-item.active {
+    background: var(--sidebar-active);
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-weight: 500;
+    gap: 12px;
+  }
+
+  .nav-link i {
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+  }
+
+  .nav-link .nav-text {
+    flex: 1;
+  }
+
+  .nav-arrow {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+
+  /* 主內容區 */
+  .main-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 24px;
+  }
+
+  .page-header {
+    margin-bottom: 32px;
+  }
+
+  .page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .breadcrumb {
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .breadcrumb a {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--purple-primary);
+  }
+
+  /* 統計卡片 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .stat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--purple-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* 圖表區域 */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .chart-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+  }
+
+  .chart-header {
+    margin-bottom: 20px;
+  }
+
+  .chart-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .chart-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .chart-container {
+    height: 200px;
+    position: relative;
+  }
+
+  /* 響應式設計 */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    
+    .main-content {
+      margin-left: 0;
+      padding: 16px;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .charts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* 其他樣式 */
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+  }
+
+  .btn-primary {
+    background: var(--purple-primary);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: #5b5cf0;
+    transform: translateY(-1px);
+  }
+
+  .form-control {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .form-control:focus {
+    border-color: var(--purple-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  .table {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .table th {
+    background: var(--main-bg);
+    border: none;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .table td {
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  /* 用戶狀態樣式 */
+  .user-avatar {
+    font-size: 24px;
+    color: var(--sidebar-text);
+    opacity: 0.8;
+  }
+
+  .user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sidebar-text);
+    margin-bottom: 2px;
+  }
+
+  .user-status {
+    font-size: 12px;
+    color: var(--sidebar-text);
+    opacity: 0.7;
+  }
+
+  .btn-sm {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  .btn-outline-danger {
+    color: #ef4444;
+    border-color: #ef4444;
+    background: transparent;
+  }
+
+  .btn-outline-danger:hover {
+    background: #ef4444;
+    color: white;
+  }
+
+  #data-status {
+    font-size: 14px;
+    padding: 8px 16px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+  }
+</style>
 
 </head>
 <body>
-  <div class="wrapper">
+  <div class="dashboard-container">
     <!-- 側邊欄 -->
-    <div class="sidebar" data="blue">
-      <div class="sidebar-wrapper">
+    <div class="sidebar">
+      <div class="sidebar-header">
         <div class="logo">
-          <a href="#" class="simple-text logo-normal">GD Share Viewer</a>
+          <div class="logo-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="logo-text">DashboardKit</div>
         </div>
-        <ul class="nav">
-          <li class="active">
-            <a href="#">
-              <i class="tim-icons icon-paper"></i>
-              <p>檔案列表</p>
-            </a>
-          </li>
-          <li>
-            <a href="#">
-              <i class="tim-icons icon-settings"></i>
-              <p>設定 (未來擴充)</p>
-            </a>
-          </li>
-        </ul>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">導覽</div>
+        <div class="nav-item active" data-page="dashboard">
+          <a href="#" class="nav-link" onclick="showPage('dashboard')">
+            <i class="fas fa-home"></i>
+            <span class="nav-text">首頁</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">AI應用</div>
+        <div class="nav-item" data-page="files">
+          <a href="#" class="nav-link" onclick="showPage('files')">
+            <i class="fas fa-users"></i>
+            <span class="nav-text">精選助手</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+        </div>
+        <div class="nav-item" data-page="statistics">
+          <a href="#" class="nav-link" onclick="showPage('statistics')">
+            <i class="fas fa-users"></i>
+            <span class="nav-text">精選助手</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+        </div>
+        <div class="nav-item" data-page="settings">
+          <a href="#" class="nav-link" onclick="showPage('settings')">
+            <i class="fas fa-users"></i>
+            <span class="nav-text">部門別助手</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+        </div>
+        <div class="nav-item" data-page="profile">
+          <a href="#" class="nav-link" onclick="showPage('profile')">
+            <i class="fas fa-globe"></i>
+            <span class="nav-text">AI外部資源</span>
+            <i class="fas fa-chevron-right nav-arrow"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-title">OTHER</div>
+        <div class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="fas fa-store"></i>
+            <span class="nav-text">Sample page</span>
+          </a>
+        </div>
+      </div>
+      
+      <!-- 用戶狀態區域 -->
+      <div class="nav-section" style="margin-top: auto; padding-top: 20px;">
+        <div class="nav-item" id="user-status-section">
+          <div class="nav-link" style="flex-direction: column; align-items: flex-start; padding: 16px;">
+            <div class="d-flex align-items-center w-100 mb-2">
+              <div class="user-avatar me-2">
+                <i class="fas fa-user-circle"></i>
+              </div>
+              <div class="user-info">
+                <div class="user-name" id="sidebar-user-name">未登入</div>
+                <div class="user-status" id="sidebar-user-status">點擊登入 Google</div>
+              </div>
+            </div>
+            <button id="signin-button" class="btn btn-primary btn-sm w-100" style="display: block;">
+              <i class="fas fa-sign-in-alt me-1"></i>登入 Google
+            </button>
+            <button id="signout-button" class="btn btn-outline-danger btn-sm w-100" style="display: none;">
+              <i class="fas fa-sign-out-alt me-1"></i>登出
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+    
 
     <!-- 主內容 -->
-    <div class="main-panel">
-      <!-- 上方導覽列 -->
-      <nav class="navbar navbar-expand-lg navbar-transparent bg-primary navbar-absolute">
-        <div class="container-fluid">
-          <div class="navbar-wrapper">
-            <a class="navbar-brand" href="javascript:void(0)">Google Drive 分享檔案</a>
-          </div>
-          <button id="signin-button" class="btn btn-info btn-sm">登入</button>
-          <button id="signout-button" class="btn btn-danger btn-sm" style="display:none">登出</button>
+    <div class="main-content">
+      <!-- 頁面標題 -->
+      <div class="page-header">
+        <h1 class="page-title">Dashboard sale</h1>
+        <div class="breadcrumb">
+          <a href="#">Home</a> > Dashboard sale
         </div>
-      </nav>
+      </div>
 
-      <!-- 內容區 -->
-      <div class="content">
-        <div class="row">
-          <div class="col-md-12">
-            <div class="card">
-              <div class="card-header">
-                <h4 class="card-title">已分享的檔案</h4>
-                <fieldset>
-                  <legend>選擇要查詢的分享類型</legend>
-                  <label>
-                    <input type="radio" name="mode" value="sharedWithMe" checked />
-                    別人分享給我
-                  </label>
-                  <label>
-                    <input type="radio" name="mode" value="sharedByMe" />
-                    我分享給別人
-                  </label>
-                </fieldset>
-                <button id="load-files" class="btn btn-primary">載入分享檔案</button>
+      <!-- 儀表板頁面 -->
+      <div id="dashboard-page" class="page-content">
+        <!-- 統計卡片網格 -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon">
+                <i class="fas fa-users"></i>
               </div>
-              <div class="card-body" id="file-list"></div>
             </div>
+            <div class="stat-value" id="total-files">1000</div>
+            <div class="stat-label">CUSTOMERS</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon">
+                <i class="fas fa-globe"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="shared-with-me">$1252</div>
+            <div class="stat-label">REVENUE</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon">
+                <i class="fas fa-sync-alt"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="shared-by-me">3550</div>
+            <div class="stat-label">RETURNS</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon">
+                <i class="fas fa-cloud-download-alt"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="monthly-new">3550</div>
+            <div class="stat-label">DOWNLOADS</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon">
+                <i class="fas fa-arrow-up"></i>
+              </div>
+            </div>
+            <div class="stat-value">+12%</div>
+            <div class="stat-label">GROWTH</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-header">
+              <div class="stat-icon">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+            </div>
+            <div class="stat-value">1,234</div>
+            <div class="stat-label">ORDERS</div>
+          </div>
+        </div>
+
+        <!-- 圖表區域 -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">53.94% Conversion Rate</div>
+              <div class="chart-description">Number of conversions divided by the total visitors.</div>
+            </div>
+            <div class="chart-container">
+              <canvas id="conversionChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">1432 Order delivered</div>
+              <div class="chart-description">Total number of order delivered this month.</div>
+            </div>
+            <div class="chart-container">
+              <canvas id="ordersChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 數據載入提示 -->
+        <div class="d-flex justify-content-end mb-4">
+          <div id="data-status" class="text-muted">
+            <i class="fas fa-info-circle me-1"></i>
+            <span id="data-status-text">登入後將顯示真實數據</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 檔案列表頁面 -->
+      <div id="files-page" class="page-content" style="display: none;">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Google Drive 檔案管理</div>
+            <div class="chart-description">查看和管理您的 Google Drive 分享檔案</div>
+          </div>
+          <div class="p-4">
+            <div class="mb-3">
+              <label class="form-label">選擇要查詢的分享類型</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mode" value="sharedWithMe" id="sharedWithMe" checked>
+                <label class="form-check-label" for="sharedWithMe">別人分享給我</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mode" value="sharedByMe" id="sharedByMe">
+                <label class="form-check-label" for="sharedByMe">我分享給別人</label>
+              </div>
+            </div>
+            <button id="load-files" class="btn btn-primary">載入分享檔案</button>
+            <div id="file-list" class="mt-4"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 其他頁面 -->
+      <div id="statistics-page" class="page-content" style="display: none;">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">統計分析</div>
+            <div class="chart-description">查看詳細的數據分析和圖表</div>
+          </div>
+          <div class="p-4">
+            <p class="text-muted">統計功能開發中...</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-page" class="page-content" style="display: none;">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">設定</div>
+            <div class="chart-description">管理應用程式設定和偏好</div>
+          </div>
+          <div class="p-4">
+            <p class="text-muted">設定功能開發中...</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="profile-page" class="page-content" style="display: none;">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">個人資料</div>
+            <div class="chart-description">查看和管理您的帳戶資訊</div>
+          </div>
+          <div class="p-4">
+            <p class="text-muted">個人資料功能開發中...</p>
           </div>
         </div>
       </div>
@@ -81,9 +644,8 @@
   <!-- JS -->
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://demos.creative-tim.com/black-dashboard/assets/js/black-dashboard.min.js?v=1.0.0"></script>
 </body>
 </html>
