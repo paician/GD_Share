@@ -425,7 +425,7 @@ function createCharts() {
   const conversionCtx = document.getElementById('conversionChart');
   if (conversionCtx) {
     // 銷毀已存在的圖表
-    if (window.conversionChart) {
+    if (window.conversionChart && typeof window.conversionChart.destroy === 'function') {
       window.conversionChart.destroy();
     }
     
@@ -487,7 +487,7 @@ function createCharts() {
   const ordersCtx = document.getElementById('ordersChart');
   if (ordersCtx) {
     // 銷毀已存在的圖表
-    if (window.ordersChart) {
+    if (window.ordersChart && typeof window.ordersChart.destroy === 'function') {
       window.ordersChart.destroy();
     }
     
@@ -1116,12 +1116,16 @@ function loadAuthorizedAccounts() {
         // 自動設置有效的 token
         gapi.client.setToken({ access_token: currentAccount.accessToken });
         console.log(`自動登入帳號: ${currentAccount.email}`);
+        // 更新顯示
+        updateAuthorizedAccountsDisplay();
       } else {
         // 所有 token 都過期了，清空帳號列表
         authorizedAccounts = [];
         currentAccount = null;
         localStorage.removeItem('authorizedAccounts');
         console.log('所有授權已過期，需要重新登入');
+        // 更新顯示
+        updateAuthorizedAccountsDisplay();
       }
     }
   }
@@ -1298,6 +1302,14 @@ async function getUserInfo(accessToken) {
 // 更新已授權帳號顯示
 function updateAuthorizedAccountsDisplay() {
   const container = document.getElementById('authorized-accounts');
+  if (!container) {
+    console.error('❌ 找不到 authorized-accounts 容器');
+    return;
+  }
+  
+  console.log('🔍 更新帳號顯示，當前帳號數量:', authorizedAccounts.length);
+  console.log('🔍 當前帳號:', currentAccount);
+  
   container.innerHTML = '';
   
   authorizedAccounts.forEach(account => {
@@ -1584,7 +1596,7 @@ window.onload = () => {
           gapi.client.setToken({ access_token: currentAccount.accessToken });
           await loadAllDataAndUpdateDashboard();
           console.log('自動載入數據完成');
-        } else {
+      } else {
           // Token 過期，移除該帳號
           removeAccount(currentAccount.id);
           console.log('Token 已過期，已移除帳號');
