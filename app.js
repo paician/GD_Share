@@ -75,8 +75,8 @@ signinButton.onclick = () => {
 
 // 只有當 signoutButton 存在時才設置 onclick
 if (signoutButton) {
-  signoutButton.onclick = () => {
-    google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
+signoutButton.onclick = () => {
+  google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
       // 更新側邊欄用戶狀態
       updateSidebarUserStatus(false);
       
@@ -91,16 +91,16 @@ if (signoutButton) {
       resetDashboardData();
       
       if (fileList) {
-        fileList.innerHTML = "";
+    fileList.innerHTML = "";
       }
-      gapi.client.setToken(null);
-    });
-  };
+    gapi.client.setToken(null);
+  });
+};
 }
 
 // 只有當 loadFilesButton 存在時才設置 onclick
 if (loadFilesButton) {
-  loadFilesButton.onclick = async () => {
+loadFilesButton.onclick = async () => {
   const mode = document.querySelector('input[name="mode"]:checked').value;
   fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
 
@@ -1129,6 +1129,15 @@ function addNewAccount() {
     if (resp.error) throw resp;
     
     try {
+      console.log("開始添加新帳號...");
+      
+      // 先設置 token 到 gapi client
+      gapi.client.setToken(resp);
+      console.log("Token 已設置到 gapi client");
+      
+      // 等待一下讓 token 生效
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // 獲取用戶資訊
       const userInfo = await getUserInfo(resp.access_token);
       
@@ -1165,32 +1174,83 @@ function addNewAccount() {
       
     } catch (err) {
       console.error("添加帳號失敗：", err);
-      alert("添加帳號失敗，請重試");
+      alert(`❌ 添加帳號失敗：${err.message}\n請檢查網路連線或重試`);
     }
   };
   
   tokenClient.requestAccessToken({ prompt: "select_account" });
 }
 
-// 獲取用戶資訊
+// 獲取用戶資訊 - 使用正確的 Google API
 async function getUserInfo(accessToken) {
   try {
     console.log("正在獲取用戶資訊...");
-    const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`);
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // 方法1: 使用 Google Drive API 獲取用戶資訊
+    try {
+      const response = await gapi.client.drive.about.get({
+        fields: "user(displayName,emailAddress,photoLink)"
+      });
+      
+      if (response.result && response.result.user) {
+        const user = response.result.user;
+        const userInfo = {
+          email: user.emailAddress,
+          name: user.displayName || user.emailAddress.split('@')[0],
+          picture: user.photoLink || 'https://via.placeholder.com/40x40?text=U'
+        };
+        console.log("用戶資訊獲取成功 (Drive API):", userInfo);
+        return userInfo;
+      }
+    } catch (driveError) {
+      console.log("Drive API 獲取用戶資訊失敗，嘗試其他方法:", driveError);
     }
     
-    const userInfo = await response.json();
-    console.log("用戶資訊獲取成功:", userInfo);
-    
-    // 確保有必要的資訊
-    if (!userInfo.email) {
-      throw new Error("無法獲取用戶電子郵件");
+    // 方法2: 使用 OAuth2 userinfo API
+    try {
+      const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const userInfo = await response.json();
+      console.log("用戶資訊獲取成功 (OAuth2 API):", userInfo);
+      
+      // 確保有必要的資訊
+      if (!userInfo.email) {
+        throw new Error("無法獲取用戶電子郵件");
+      }
+      
+      return {
+        email: userInfo.email,
+        name: userInfo.name || userInfo.email.split('@')[0],
+        picture: userInfo.picture || 'https://via.placeholder.com/40x40?text=U'
+      };
+    } catch (oauthError) {
+      console.log("OAuth2 API 獲取用戶資訊失敗:", oauthError);
     }
     
-    return userInfo;
+    // 方法3: 使用 token 中的資訊
+    try {
+      const tokenInfo = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
+      const tokenData = await tokenInfo.json();
+      
+      if (tokenData.email) {
+        const userInfo = {
+          email: tokenData.email,
+          name: tokenData.email.split('@')[0],
+          picture: 'https://via.placeholder.com/40x40?text=U'
+        };
+        console.log("用戶資訊獲取成功 (Token API):", userInfo);
+        return userInfo;
+      }
+    } catch (tokenError) {
+      console.log("Token API 獲取用戶資訊失敗:", tokenError);
+    }
+    
+    throw new Error("所有方法都無法獲取用戶資訊");
+    
   } catch (error) {
     console.error("獲取用戶資訊失敗:", error);
     throw error;
@@ -1406,7 +1466,7 @@ function updateDebugInfo() {
 
 // 初始化 Google API 和身份驗證
 window.onload = () => {
-    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108c");
+    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108d (管理員後台)");
     console.log("✅ showPage 函數已定義:", typeof window.showPage);
     console.log("✅ 元素檢查:", {
       signinButton: !!signinButton,
