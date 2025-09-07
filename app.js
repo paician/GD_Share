@@ -5,17 +5,17 @@ function initializeCredentials() {
   CLIENT_ID = window.GOOGLE_CLIENT_ID || "";
   API_KEY = window.GOOGLE_API_KEY || "";
   
-  console.log("🔍 檢查憑證設置...");
-  console.log("CLIENT_ID:", CLIENT_ID ? "已設置" : "未設置");
-  console.log("API_KEY:", API_KEY ? "已設置" : "未設置");
+  console.log("🔍 檢查憑證設定...");
+  console.log("CLIENT_ID:", CLIENT_ID ? "已設定" : "未設定");
+  console.log("API_KEY:", API_KEY ? "已設定" : "未設定");
   
   if (!CLIENT_ID) {
-    console.error("❌ GOOGLE_CLIENT_ID 未設置！請檢查 config.js 檔案。");
+    console.error("❌ GOOGLE_CLIENT_ID 未設定！請檢查 config.js 檔案。");
     document.body.innerHTML = `
       <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
         <h2 style="color: #dc3545;">⚠️ 配置錯誤</h2>
-        <p>Google API 憑證未正確設置。請檢查 config.js 檔案。</p>
-        <p><small>錯誤：GOOGLE_CLIENT_ID 未設置</small></p>
+        <p>Google API 憑證未正確設定。請檢查 config.js 檔案。</p>
+        <p><small>錯誤：GOOGLE_CLIENT_ID 未設定</small></p>
         <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 10px;">重新載入</button>
       </div>
     `;
@@ -79,40 +79,40 @@ function maybeEnableButtons() {
   }
 }
 
-// 只有當 signinButton 存在時才設置 onclick
+// 只有當 signinButton 存在時才設定 onclick
 if (signinButton) {
 signinButton.onclick = () => {
   tokenClient.callback = async (resp) => {
     if (resp.error) throw resp;
       
-      // 設置 token 到 gapi client
+      // 設定 token 到 gapi client
       gapi.client.setToken(resp);
       
       // 更新側邊欄用戶狀態
       updateSidebarUserStatus(true);
       
-      // 自動載入數據並更新 Dashboard
+      // 自動載入資料並更新 Dashboard
       await loadAllDataAndUpdateDashboard();
   };
   tokenClient.requestAccessToken({ prompt: "" });
 };
 }
 
-// 只有當 signoutButton 存在時才設置 onclick
+// 只有當 signoutButton 存在時才設定 onclick
 if (signoutButton) {
 signoutButton.onclick = () => {
   google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
       // 更新側邊欄用戶狀態
       updateSidebarUserStatus(false);
       
-      // 清空數據
+      // 清空資料
       fileData = {
         sharedWithMe: [],
         sharedByMe: [],
         allFiles: []
       };
       
-      // 重置 Dashboard 數據
+      // 重置 Dashboard 資料
       resetDashboardData();
       
       if (fileList) {
@@ -123,7 +123,7 @@ signoutButton.onclick = () => {
 };
 }
 
-// 只有當 loadFilesButton 存在時才設置 onclick
+// 只有當 loadFilesButton 存在時才設定 onclick
 if (loadFilesButton) {
 loadFilesButton.onclick = async () => {
   const mode = document.querySelector('input[name="mode"]:checked').value;
@@ -225,7 +225,7 @@ loadFilesButton.onclick = async () => {
       ul.appendChild(li);
     });
 
-    // 更新儀表板數據
+    // 更新儀表板資料
     updateDashboard();
 
   } catch (err) {
@@ -290,15 +290,15 @@ function updateSidebarUserStatus(isLoggedIn) {
   }
 }
 
-// 載入所有數據並更新 Dashboard
-// 重新載入數據 - 全局函數
+// 載入所有資料並更新 Dashboard
+// 重新載入資料 - 全局函數
 window.loadAllDataAndUpdateDashboard = async function() {
   try {
-    // 更新數據狀態提示
+    // 更新資料狀態提示
     const dataStatusText = document.getElementById('data-status-text');
-    dataStatusText.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>正在載入數據...';
+    dataStatusText.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>正在載入資料...';
     
-    console.log("開始自動載入 Dashboard 數據...");
+    console.log("開始自動載入 Dashboard 資料...");
     
     // 載入分享給我的檔案
     console.log("載入分享給我的檔案...");
@@ -332,20 +332,20 @@ window.loadAllDataAndUpdateDashboard = async function() {
     // 更新 Dashboard
     updateDashboard();
     
-    // 更新數據狀態提示
-    dataStatusText.innerHTML = `<i class="fas fa-check-circle me-1"></i>數據已載入完成 (${fileData.allFiles.length} 個檔案)`;
+    // 更新資料狀態提示
+    dataStatusText.innerHTML = `<i class="fas fa-check-circle me-1"></i>資料已載入完成 (${fileData.allFiles.length} 個檔案)`;
     
     // 3秒後隱藏提示
     setTimeout(() => {
-      dataStatusText.innerHTML = '<i class="fas fa-info-circle me-1"></i>數據已同步';
+      dataStatusText.innerHTML = '<i class="fas fa-info-circle me-1"></i>資料已同步';
     }, 3000);
     
   } catch (err) {
-    console.error("載入數據失敗：", err);
+    console.error("載入資料失敗：", err);
     console.error("錯誤詳情：", err.result);
     
     const dataStatusText = document.getElementById('data-status-text');
-    let errorMsg = "載入數據失敗";
+    let errorMsg = "載入資料失敗";
     
     if (err.result?.error) {
       errorMsg = `載入失敗: ${err.result.error.message}`;
@@ -367,7 +367,7 @@ window.loadAllDataAndUpdateDashboard = async function() {
   }
 }
 
-// 重置 Dashboard 數據
+// 重置 Dashboard 資料
 function resetDashboardData() {
   const totalFilesEl = document.getElementById('total-files');
   const sharedWithMeEl = document.getElementById('shared-with-me');
@@ -379,7 +379,7 @@ function resetDashboardData() {
   if (sharedWithMeEl) sharedWithMeEl.textContent = '$1252';
   if (sharedByMeEl) sharedByMeEl.textContent = '3550';
   if (monthlyNewEl) monthlyNewEl.textContent = '3550';
-  if (dataStatusText) dataStatusText.innerHTML = '<i class="fas fa-info-circle me-1"></i>登入後將顯示真實數據';
+  if (dataStatusText) dataStatusText.innerHTML = '<i class="fas fa-info-circle me-1"></i>登入後將顯示真實資料';
 }
 
 // 頁面切換功能
@@ -421,7 +421,7 @@ window.showPage = function(pageName) {
 
 // 創建圖表
 function createCharts() {
-  // 分享趨勢圖表 (基於真實數據) - 處理重複的 ID
+  // 分享趨勢圖表 (基於真實資料) - 處理重複的 ID
   const conversionElements = document.querySelectorAll('#conversionChart');
   conversionElements.forEach((conversionCtx, index) => {
     if (conversionCtx) {
@@ -430,7 +430,7 @@ function createCharts() {
         window.conversionChart.destroy();
       }
     
-      // 計算分享趨勢數據
+      // 計算分享趨勢資料
       const trendData = calculateShareTrend();
       
       window.conversionChart = new Chart(conversionCtx, {
@@ -527,10 +527,10 @@ function createCharts() {
   });
 }
 
-// 計算分享趨勢數據
+// 計算分享趨勢資料
 function calculateShareTrend() {
   if (fileData.allFiles.length === 0) {
-    return { labels: ['無數據'], data: [0] };
+    return { labels: ['無資料'], data: [0] };
   }
   
   // 按月份統計檔案
@@ -555,7 +555,7 @@ function calculateShareTrend() {
 // 計算檔案類型分佈
 function calculateFileTypeDistribution() {
   if (fileData.allFiles.length === 0) {
-    return { labels: ['無數據'], data: [0] };
+    return { labels: ['無資料'], data: [0] };
   }
   
   const typeCount = {};
@@ -575,7 +575,7 @@ function calculateFileTypeDistribution() {
   return { labels, data };
 }
 
-// 更新儀表板數據
+// 更新儀表板資料
 function updateDashboard() {
   const totalFiles = fileData.allFiles.length;
   const sharedWithMe = fileData.sharedWithMe.length;
@@ -593,7 +593,7 @@ function updateDashboard() {
   const totalSize = fileData.allFiles.reduce((sum, file) => sum + (parseInt(file.size) || 0), 0);
   const totalSizeMB = Math.round(totalSize / 1024 / 1024);
   
-  // 更新統計卡片 - 映射到有意義的數據
+  // 更新統計卡片 - 映射到有意義的資料
   const totalFilesEl = document.getElementById('total-files');
   const sharedWithMeEl = document.getElementById('shared-with-me');
   const sharedByMeEl = document.getElementById('shared-by-me');
@@ -630,7 +630,7 @@ function updateDashboard() {
   updateRecentActivity();
 }
 
-// 更新額外的統計數據
+// 更新額外的統計資料
 function updateAdditionalStats(totalFiles, totalSizeMB) {
   // 計算成長率 (基於檔案數量)
   const growthRate = totalFiles > 0 ? Math.min(Math.round((totalFiles / 100) * 12), 25) : 12;
@@ -846,7 +846,7 @@ function updateProfile() {
   }
   
   // 這裡可以調用 Google People API 來獲取用戶資訊
-  // 目前使用模擬數據
+  // 目前使用模擬資料
   document.getElementById('user-name').textContent = 'Google 用戶';
   document.getElementById('user-email').textContent = 'user@gmail.com';
   document.getElementById('user-info').textContent = '已登入 Google 帳戶';
@@ -1030,12 +1030,12 @@ function initializeMultiAccountSystem() {
   const addButtons = document.querySelectorAll('#add-account-button');
   const manageButtons = document.querySelectorAll('#manage-accounts-button');
   
-  console.log('🔍 找到添加帳號按鈕數量:', addButtons.length);
+  console.log('🔍 找到新增帳號按鈕數量:', addButtons.length);
   console.log('🔍 找到管理帳號按鈕數量:', manageButtons.length);
   
   addButtons.forEach((button, index) => {
     button.onclick = addNewAccount;
-    console.log(`✅ 綁定添加帳號按鈕 ${index + 1}`);
+    console.log(`✅ 綁定新增帳號按鈕 ${index + 1}`);
   });
   
   manageButtons.forEach((button, index) => {
@@ -1117,7 +1117,7 @@ function loadAuthorizedAccounts() {
       
       if (validAccounts.length > 0) {
         currentAccount = validAccounts[0];
-        // 自動設置有效的 token
+        // 自動設定有效的 token
         gapi.client.setToken({ access_token: currentAccount.accessToken });
         console.log(`自動登入帳號: ${currentAccount.email}`);
         // 更新顯示
@@ -1169,17 +1169,17 @@ function saveAuthorizedAccounts() {
   localStorage.setItem('authorizedAccounts', JSON.stringify(authorizedAccounts));
 }
 
-// 添加新帳號
+// 新增新帳號
 function addNewAccount() {
   tokenClient.callback = async (resp) => {
     if (resp.error) throw resp;
     
     try {
-      console.log("開始添加新帳號...");
+      console.log("開始新增新帳號...");
       
-      // 先設置 token 到 gapi client
+      // 先設定 token 到 gapi client
       gapi.client.setToken(resp);
-      console.log("Token 已設置到 gapi client");
+      console.log("Token 已設定到 gapi client");
       
       // 等待一下讓 token 生效
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1190,11 +1190,11 @@ function addNewAccount() {
       // 檢查是否已存在
       const existingAccount = authorizedAccounts.find(acc => acc.email === userInfo.email);
       if (existingAccount) {
-        alert(`⚠️ 此帳號已經授權過了！\n帳號：${userInfo.email}\n添加時間：${new Date(existingAccount.addedAt).toLocaleString()}`);
+        alert(`⚠️ 此帳號已經授權過了！\n帳號：${userInfo.email}\n新增時間：${new Date(existingAccount.addedAt).toLocaleString()}`);
         return;
       }
       
-      // 添加新帳號
+      // 新增新帳號
       const newAccount = {
         id: Date.now().toString(),
         email: userInfo.email,
@@ -1211,7 +1211,7 @@ function addNewAccount() {
       // 更新顯示
       updateAuthorizedAccountsDisplay();
       
-      // 載入數據
+      // 載入資料
       await loadAllDataAndUpdateDashboard();
       
       // 改善成功訊息
@@ -1219,8 +1219,8 @@ function addNewAccount() {
       alert(`✅ 成功新增帳號：${displayName}`);
       
     } catch (err) {
-      console.error("添加帳號失敗：", err);
-      alert(`❌ 添加帳號失敗：${err.message}\n請檢查網路連線或重試`);
+      console.error("新增帳號失敗：", err);
+      alert(`❌ 新增帳號失敗：${err.message}\n請檢查網路連線或重試`);
     }
   };
   
@@ -1346,7 +1346,7 @@ function updateAccountContainer(container, type) {
             <div class="flex-grow-1">
               <div class="user-name" style="font-size: 12px;">${account.name}</div>
               <div class="user-status" style="font-size: 10px; opacity: 0.7;">${account.email}</div>
-              <div class="user-time" style="font-size: 10px; opacity: 0.5;">添加時間: ${new Date(account.addedAt).toLocaleString()}</div>
+              <div class="user-time" style="font-size: 10px; opacity: 0.5;">新增時間: ${new Date(account.addedAt).toLocaleString()}</div>
             </div>
             <div class="d-flex gap-1">
               ${account.id === currentAccount?.id ? '<span class="badge bg-primary">當前</span>' : ''}
@@ -1379,7 +1379,7 @@ function updateAccountContainer(container, type) {
     accountDiv.onclick = () => switchAccount(account.id);
     container.appendChild(accountDiv);
     
-    console.log(`✅ ${type}帳號 ${index + 1} 已添加到容器`);
+    console.log(`✅ ${type}帳號 ${index + 1} 已新增到容器`);
   });
   
   console.log(`🔍 ${type}容器最終子元素數量:`, container.children.length);
@@ -1396,7 +1396,7 @@ function updateAccountSelector() {
   // 清空現有選項
   accountSelector.innerHTML = '<option value="">請選擇帳號...</option>';
   
-  // 添加已授權的帳號
+  // 新增已授權的帳號
   authorizedAccounts.forEach(account => {
     const option = document.createElement('option');
     option.value = account.id;
@@ -1415,13 +1415,13 @@ async function switchAccount(accountId) {
   
   currentAccount = account;
   
-  // 設置 token
+  // 設定 token
   gapi.client.setToken({ access_token: account.accessToken });
   
   // 更新顯示
   updateAuthorizedAccountsDisplay();
   
-  // 載入數據
+  // 載入資料
   await loadAllDataAndUpdateDashboard();
 }
 
@@ -1441,7 +1441,7 @@ window.removeAccount = function(accountId) {
       gapi.client.setToken({ access_token: currentAccount.accessToken });
       loadAllDataAndUpdateDashboard();
     } else {
-      // 沒有帳號了，清空數據
+      // 沒有帳號了，清空資料
       fileData = { sharedWithMe: [], sharedByMe: [], allFiles: [] };
       updateDashboard();
     }
@@ -1470,7 +1470,7 @@ function showAccountManagement() {
                     <div>
                       <div class="fw-bold">${account.name}</div>
                       <small class="text-muted">${account.email}</small>
-                      <br><small class="text-muted">添加時間：${new Date(account.addedAt).toLocaleString()}</small>
+                      <br><small class="text-muted">新增時間：${new Date(account.addedAt).toLocaleString()}</small>
                     </div>
                   </div>
                   <div>
@@ -1485,7 +1485,7 @@ function showAccountManagement() {
           </div>
           <div class="text-center">
             <button class="btn btn-primary" onclick="addNewAccount()">
-              <i class="fas fa-plus me-1"></i>添加新帳號
+              <i class="fas fa-plus me-1"></i>新增新帳號
             </button>
           </div>
         </div>
@@ -1502,9 +1502,9 @@ function showAccountManagement() {
   });
 }
 
-// 清除所有本地數據 - 全局函數
+// 清除所有本機資料 - 全局函數
 window.clearAllData = function() {
-  if (confirm('⚠️ 確定要清除所有本地數據嗎？\n\n這將包括：\n- 所有綁定的 Google 帳號\n- 所有檔案數據\n- 所有設定\n\n此操作無法復原！')) {
+  if (confirm('⚠️ 確定要清除所有本機資料嗎？\n\n這將包括：\n- 所有綁定的 Google 帳號\n- 所有檔案資料\n- 所有設定\n\n此操作無法復原！')) {
     // 清除 localStorage
     localStorage.removeItem('authorizedAccounts');
     
@@ -1527,7 +1527,7 @@ window.clearAllData = function() {
     updateDashboard();
     
     // 顯示成功訊息
-    alert('✅ 所有本地數據已清除！\n\n頁面將重新載入以確保完全重置。');
+    alert('✅ 所有本機資料已清除！\n\n頁面將重新載入以確保完全重置。');
     
     // 重新載入頁面
     setTimeout(() => {
@@ -1589,7 +1589,7 @@ function updateDebugInfo() {
   scopeStatus.textContent = SCOPES;
   scopeStatus.className = 'text-info';
   
-  // 檔案數據
+  // 檔案資料
   const totalFiles = fileData.allFiles.length;
   const sharedWithMe = fileData.sharedWithMe.length;
   const sharedByMe = fileData.sharedByMe.length;
@@ -1634,17 +1634,17 @@ window.onload = () => {
       updateDebugInfo();
     }, 2000);
   
-    // 檢查登入狀態並自動載入數據
+    // 檢查登入狀態並自動載入資料
     setTimeout(async () => {
       if (currentAccount) {
         console.log(`檢測到已授權帳號: ${currentAccount.email}`);
         // 驗證 token 有效性
         const isValid = await validateAndRefreshToken(currentAccount);
         if (isValid) {
-          // 有有效的已授權帳號，自動載入數據
+          // 有有效的已授權帳號，自動載入資料
           gapi.client.setToken({ access_token: currentAccount.accessToken });
           await loadAllDataAndUpdateDashboard();
-          console.log('自動載入數據完成');
+          console.log('自動載入資料完成');
       } else {
           // Token 過期，移除該帳號
           removeAccount(currentAccount.id);
