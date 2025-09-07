@@ -1001,6 +1001,17 @@ function initializeMultiAccountSystem() {
   document.getElementById('add-account-button').onclick = addNewAccount;
   document.getElementById('manage-accounts-button').onclick = showAccountManagement;
   
+  // 綁定帳號選擇器事件
+  const accountSelector = document.getElementById('account-selector');
+  if (accountSelector) {
+    accountSelector.addEventListener('change', (e) => {
+      const selectedAccountId = e.target.value;
+      if (selectedAccountId) {
+        switchAccount(selectedAccountId);
+      }
+    });
+  }
+  
   // 綁定搜尋和篩選事件
   const searchInput = document.getElementById('file-search');
   const timeRangeSelect = document.getElementById('time-range');
@@ -1124,7 +1135,7 @@ function addNewAccount() {
       // 檢查是否已存在
       const existingAccount = authorizedAccounts.find(acc => acc.email === userInfo.email);
       if (existingAccount) {
-        alert('此帳號已經授權過了！');
+        alert(`⚠️ 此帳號已經授權過了！\n帳號：${userInfo.email}\n添加時間：${new Date(existingAccount.addedAt).toLocaleString()}`);
         return;
       }
       
@@ -1132,8 +1143,8 @@ function addNewAccount() {
       const newAccount = {
         id: Date.now().toString(),
         email: userInfo.email,
-        name: userInfo.name,
-        picture: userInfo.picture,
+        name: userInfo.name || userInfo.email.split('@')[0], // 如果沒有名稱，使用電子郵件前綴
+        picture: userInfo.picture || 'https://via.placeholder.com/40x40?text=U', // 預設頭像
         accessToken: resp.access_token,
         addedAt: new Date().toISOString()
       };
@@ -1148,7 +1159,9 @@ function addNewAccount() {
       // 載入數據
       await loadAllDataAndUpdateDashboard();
       
-      alert(`成功添加帳號：${userInfo.email}`);
+      // 改善成功訊息
+      const displayName = userInfo.name || userInfo.email;
+      alert(`✅ 成功新增帳號：${displayName}`);
       
     } catch (err) {
       console.error("添加帳號失敗：", err);
@@ -1161,8 +1174,27 @@ function addNewAccount() {
 
 // 獲取用戶資訊
 async function getUserInfo(accessToken) {
-  const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`);
-  return await response.json();
+  try {
+    console.log("正在獲取用戶資訊...");
+    const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const userInfo = await response.json();
+    console.log("用戶資訊獲取成功:", userInfo);
+    
+    // 確保有必要的資訊
+    if (!userInfo.email) {
+      throw new Error("無法獲取用戶電子郵件");
+    }
+    
+    return userInfo;
+  } catch (error) {
+    console.error("獲取用戶資訊失敗:", error);
+    throw error;
+  }
 }
 
 // 更新已授權帳號顯示
@@ -1191,6 +1223,29 @@ function updateAuthorizedAccountsDisplay() {
     // 點擊切換帳號
     accountDiv.onclick = () => switchAccount(account.id);
     container.appendChild(accountDiv);
+  });
+  
+  // 更新檔案頁面的帳號選擇器
+  updateAccountSelector();
+}
+
+// 更新帳號選擇器
+function updateAccountSelector() {
+  const accountSelector = document.getElementById('account-selector');
+  if (!accountSelector) return;
+  
+  // 清空現有選項
+  accountSelector.innerHTML = '<option value="">請選擇帳號...</option>';
+  
+  // 添加已授權的帳號
+  authorizedAccounts.forEach(account => {
+    const option = document.createElement('option');
+    option.value = account.id;
+    option.textContent = `${account.name} (${account.email})`;
+    if (account.id === currentAccount?.id) {
+      option.selected = true;
+    }
+    accountSelector.appendChild(option);
   });
 }
 
@@ -1351,7 +1406,7 @@ function updateDebugInfo() {
 
 // 初始化 Google API 和身份驗證
 window.onload = () => {
-    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108b");
+    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108c");
     console.log("✅ showPage 函數已定義:", typeof window.showPage);
     console.log("✅ 元素檢查:", {
       signinButton: !!signinButton,
