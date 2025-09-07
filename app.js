@@ -26,7 +26,7 @@ function initializeCredentials() {
   }
 }
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly";
+const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive";
 
 let tokenClient;
 let gapiInited = false;
@@ -145,7 +145,7 @@ loadFilesButton.onclick = async () => {
       const response = await gapi.client.drive.files.list({
         pageSize: 100,
         q: "sharedWithMe=true",
-        fields: "files(id, name, webViewLink, createdTime, permissions, size, mimeType)"
+        fields: "files(id, name, webViewLink, createdTime, permissions, size, mimeType, modifiedTime)"
       });
       console.log("分享給我回應：", response);
       files = response.result.files || [];
@@ -157,7 +157,7 @@ loadFilesButton.onclick = async () => {
       const response = await gapi.client.drive.files.list({
         pageSize: 100,
         q: "trashed = false and 'me' in owners",
-        fields: "files(id, name, webViewLink, createdTime, permissions, owners, size, mimeType)"
+        fields: "files(id, name, webViewLink, createdTime, permissions, owners, size, mimeType, modifiedTime)"
       });
       console.log("我分享的回應：", response);
       const allFiles = response.result.files || [];
@@ -189,6 +189,9 @@ loadFilesButton.onclick = async () => {
 
     // 應用篩選和搜尋
     const filteredFiles = applyFiltersAndSearch(files);
+    
+    // 為每個檔案獲取詳細的權限資訊
+    await loadFilePermissions(files);
     
     // 使用 displayFiles 函數來顯示檔案（包含詳細按鈕）
     displayFiles(files);
@@ -866,9 +869,8 @@ function applyFiltersAndSearch(files) {
   const sharePermission = document.getElementById('share-permission').value;
   if (sharePermission !== 'all') {
     filteredFiles = filteredFiles.filter(file => {
-      // 這裡需要檢查檔案的分享權限
-      // 暫時使用簡單的檢查，實際應該調用 API 獲取權限資訊
-      return true; // 暫時返回 true，後續會實現具體的權限檢查
+      // 檢查檔案的分享權限
+      return checkFilePermission(file, sharePermission);
     });
   }
   
@@ -974,15 +976,15 @@ function displayFiles(files) {
   
   const fileList = document.getElementById('file-list');
   fileList.innerHTML = "<ul class='list-group'></ul>";
-  const ul = fileList.querySelector("ul");
+    const ul = fileList.querySelector("ul");
 
   filteredFiles.forEach((file) => {
-    const li = document.createElement("li");
+      const li = document.createElement("li");
     li.className = "list-group-item";
     
     const fileIcon = getFileIcon(file.name);
     
-    li.innerHTML = `
+      li.innerHTML = `
       <div class="d-flex justify-content-between align-items-start">
         <div class="ms-2 me-auto">
           <div class="fw-bold">
@@ -1029,9 +1031,9 @@ function displayFiles(files) {
           </div>
         </div>
       </div>
-    `;
-    ul.appendChild(li);
-  });
+      `;
+      ul.appendChild(li);
+    });
 }
 
 // 切換檔案詳細資訊顯示
@@ -1150,6 +1152,51 @@ function getRoleColor(role) {
   return colorMap[role] || 'secondary';
 }
 
+// 載入檔案權限資訊
+async function loadFilePermissions(files) {
+  console.log('開始載入檔案權限資訊...');
+  
+  for (const file of files) {
+    try {
+      const response = await gapi.client.drive.permissions.list({
+        fileId: file.id,
+        fields: 'permissions(id,type,role,emailAddress,displayName,photoLink)'
+      });
+      
+      file.permissions = response.result.permissions || [];
+      console.log(`檔案 ${file.name} 權限載入完成：`, file.permissions.length, '個權限');
+    } catch (error) {
+      console.warn(`無法載入檔案 ${file.name} 的權限：`, error);
+      file.permissions = [];
+    }
+  }
+  
+  console.log('所有檔案權限載入完成');
+}
+
+// 檢查檔案權限
+function checkFilePermission(file, targetPermission) {
+  // 如果檔案沒有 permissions 資訊，嘗試從現有數據中獲取
+  if (!file.permissions) {
+    // 從 fileData 中查找對應的檔案
+    const foundFile = fileData.allFiles.find(f => f.id === file.id);
+    if (foundFile && foundFile.permissions) {
+      file.permissions = foundFile.permissions;
+    } else {
+      return false; // 沒有權限資訊，無法判斷
+    }
+  }
+  
+  // 檢查是否有符合目標權限的分享
+  return file.permissions.some(permission => {
+    if (targetPermission === 'anyoneWithLink') {
+      return permission.id === 'anyoneWithLink' || permission.type === 'anyone';
+    } else {
+      return permission.role === targetPermission;
+    }
+  });
+}
+
 // 批次修改權限功能
 let selectedFiles = [];
 let shareRecipients = [];
@@ -1167,10 +1214,12 @@ function showBatchEditModal() {
 // 生成檔案選擇列表
 function generateFileSelectionList() {
   const fileSelectionList = document.getElementById('file-selection-list');
-  const files = fileData.allFiles || [];
+  
+  // 使用當前篩選結果的檔案，而不是全部檔案
+  const files = applyFiltersAndSearch(fileData.allFiles || []);
   
   if (files.length === 0) {
-    fileSelectionList.innerHTML = '<p class="text-muted text-center">請先載入檔案列表</p>';
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">沒有符合篩選條件的檔案</p>';
     return;
   }
   
