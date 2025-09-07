@@ -252,7 +252,8 @@ function updateSidebarUserStatus(isLoggedIn) {
 }
 
 // 載入所有數據並更新 Dashboard
-async function loadAllDataAndUpdateDashboard() {
+// 重新載入數據 - 全局函數
+window.loadAllDataAndUpdateDashboard = async function() {
   try {
     // 更新數據狀態提示
     const dataStatusText = document.getElementById('data-status-text');
@@ -343,7 +344,8 @@ function resetDashboardData() {
 }
 
 // 頁面切換功能
-function showPage(pageName) {
+// 全局函數，確保可以被 HTML onclick 調用
+window.showPage = function(pageName) {
   // 隱藏所有頁面
   const pages = document.querySelectorAll('.page-content');
   pages.forEach(page => {
@@ -498,11 +500,11 @@ function calculateShareTrend() {
   
   // 排序並格式化
   const sortedMonths = Object.keys(monthlyData).sort();
-  const labels = sortedMonths.map(month => {
-    const [year, month] = month.split('-');
+  const labels = sortedMonths.map(monthKey => {
+    const [year, month] = monthKey.split('-');
     return `${year}年${month}月`;
   });
-  const data = sortedMonths.map(month => monthlyData[month]);
+  const data = sortedMonths.map(monthKey => monthlyData[monthKey]);
   
   return { labels, data };
 }
@@ -927,8 +929,8 @@ function getFileAge(createdTime) {
   return `${Math.ceil(diffDays / 365)} 年前`;
 }
 
-// 清除搜尋
-function clearSearch() {
+// 清除搜尋 - 全局函數
+window.clearSearch = function() {
   document.getElementById('file-search').value = '';
   // 重新載入檔案列表
   if (fileData.allFiles.length > 0) {
@@ -985,6 +987,52 @@ function initializeMultiAccountSystem() {
   document.getElementById('add-account-button').onclick = addNewAccount;
   document.getElementById('manage-accounts-button').onclick = showAccountManagement;
   
+  // 綁定搜尋和篩選事件
+  const searchInput = document.getElementById('file-search');
+  const timeRangeSelect = document.getElementById('time-range');
+  const fileTypeSelect = document.getElementById('file-type');
+  const sortBySelect = document.getElementById('sort-by');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      if (fileData.allFiles.length > 0) {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const files = mode === 'sharedWithMe' ? fileData.sharedWithMe : fileData.sharedByMe;
+        displayFiles(files);
+      }
+    });
+  }
+  
+  if (timeRangeSelect) {
+    timeRangeSelect.addEventListener('change', () => {
+      if (fileData.allFiles.length > 0) {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const files = mode === 'sharedWithMe' ? fileData.sharedWithMe : fileData.sharedByMe;
+        displayFiles(files);
+      }
+    });
+  }
+  
+  if (fileTypeSelect) {
+    fileTypeSelect.addEventListener('change', () => {
+      if (fileData.allFiles.length > 0) {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const files = mode === 'sharedWithMe' ? fileData.sharedWithMe : fileData.sharedByMe;
+        displayFiles(files);
+      }
+    });
+  }
+  
+  if (sortBySelect) {
+    sortBySelect.addEventListener('change', () => {
+      if (fileData.allFiles.length > 0) {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const files = mode === 'sharedWithMe' ? fileData.sharedWithMe : fileData.sharedByMe;
+        displayFiles(files);
+      }
+    });
+  }
+  
   // 更新帳號列表顯示
   updateAuthorizedAccountsDisplay();
 }
@@ -995,8 +1043,53 @@ function loadAuthorizedAccounts() {
   if (saved) {
     authorizedAccounts = JSON.parse(saved);
     if (authorizedAccounts.length > 0) {
-      currentAccount = authorizedAccounts[0];
+      // 檢查 token 是否仍然有效
+      const validAccounts = authorizedAccounts.filter(account => {
+        return isTokenValid(account.accessToken);
+      });
+      
+      if (validAccounts.length > 0) {
+        currentAccount = validAccounts[0];
+        // 自動設置有效的 token
+        gapi.client.setToken({ access_token: currentAccount.accessToken });
+        console.log(`自動登入帳號: ${currentAccount.email}`);
+      } else {
+        // 所有 token 都過期了，清空帳號列表
+        authorizedAccounts = [];
+        currentAccount = null;
+        localStorage.removeItem('authorizedAccounts');
+        console.log('所有授權已過期，需要重新登入');
+      }
     }
+  }
+}
+
+// 檢查 token 是否有效
+function isTokenValid(accessToken) {
+  if (!accessToken) return false;
+  
+  // 簡單檢查：token 長度應該大於 100 字符
+  // 實際應用中應該調用 Google API 驗證 token
+  return accessToken.length > 100;
+}
+
+// 驗證並刷新 token
+async function validateAndRefreshToken(account) {
+  try {
+    // 嘗試使用 token 調用 API
+    const response = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${account.accessToken}`);
+    const tokenInfo = await response.json();
+    
+    if (tokenInfo.error) {
+      console.log(`Token 已過期: ${account.email}`);
+      return false;
+    }
+    
+    console.log(`Token 仍然有效: ${account.email}`);
+    return true;
+  } catch (err) {
+    console.log(`Token 驗證失敗: ${account.email}`, err);
+    return false;
   }
 }
 
@@ -1104,8 +1197,8 @@ async function switchAccount(accountId) {
   await loadAllDataAndUpdateDashboard();
 }
 
-// 移除帳號
-function removeAccount(accountId) {
+// 移除帳號 - 全局函數
+window.removeAccount = function(accountId) {
   if (confirm('確定要移除這個帳號嗎？')) {
     authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
     
@@ -1181,8 +1274,8 @@ function showAccountManagement() {
   });
 }
 
-// 測試 API 連接
-async function testAPIConnection() {
+// 測試 API 連接 - 全局函數
+window.testAPIConnection = async function() {
   try {
     console.log("測試 API 連接...");
     const response = await gapi.client.drive.files.list({
@@ -1198,8 +1291,8 @@ async function testAPIConnection() {
   }
 }
 
-// 調試功能
-function toggleDebugInfo() {
+// 調試功能 - 全局函數
+window.toggleDebugInfo = function() {
   const debugInfo = document.getElementById('debug-info');
   debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
   updateDebugInfo();
@@ -1263,14 +1356,26 @@ window.onload = () => {
       updateDebugInfo();
     }, 2000);
   
-    // 檢查登入狀態
-    setTimeout(() => {
+    // 檢查登入狀態並自動載入數據
+    setTimeout(async () => {
       if (currentAccount) {
-        // 有已授權的帳號，自動載入數據
-        gapi.client.setToken({ access_token: currentAccount.accessToken });
-        loadAllDataAndUpdateDashboard();
+        console.log(`檢測到已授權帳號: ${currentAccount.email}`);
+        // 驗證 token 有效性
+        const isValid = await validateAndRefreshToken(currentAccount);
+        if (isValid) {
+          // 有有效的已授權帳號，自動載入數據
+          gapi.client.setToken({ access_token: currentAccount.accessToken });
+          await loadAllDataAndUpdateDashboard();
+          console.log('自動載入數據完成');
+        } else {
+          // Token 過期，移除該帳號
+          removeAccount(currentAccount.id);
+          console.log('Token 已過期，已移除帳號');
+        }
+      } else {
+        console.log('沒有已授權的帳號，需要手動登入');
       }
       updateDebugInfo();
-    }, 1500); // 等待 GAPI 初始化完畢
+    }, 2000); // 等待 GAPI 初始化完畢
   };
   
