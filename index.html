@@ -4,93 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Google Drive 分享檔案查看器</title>
-    <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
-    <style>
-      #file-list ul {
-        list-style: none;
-        padding: 0;
-      }
-      #file-list li {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background: #fff;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      }
-      #file-list li a {
-        font-weight: bold;
-        color: #0d6efd;
-        text-decoration: none;
-      }
-      #file-list li small {
-        color: #666;
-        display: block;
-        margin-top: 0.5rem;
-      }
-      .actions {
-        margin: 1rem 0;
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-      }
-      .loading {
-        text-align: center;
-        font-style: italic;
-        color: #666;
-      }
-      .loading::after {
-        content: "⏳";
-        animation: spin 1s linear infinite;
-        display: inline-block;
-        margin-left: 5px;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg);}
-        100% { transform: rotate(360deg);}
-      }
-    </style>
+    <!-- Bootstrap & Black Dashboard -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://demos.creative-tim.com/black-dashboard/assets/css/black-dashboard.css?v=1.0.0" rel="stylesheet" />
   </head>
   <body>
-    <nav class="container-fluid">
-      <ul>
-        <li><strong>Google Drive 分享查看器</strong></li>
-      </ul>
-      <ul class="actions">
-        <li><a href="#" id="signin-button" role="button" class="contrast">登入</a></li>
-        <li><a href="#" id="signout-button" role="button" class="secondary">登出</a></li>
-      </ul>
-    </nav>
-
-    <main class="container">
-      <section>
-        <hgroup>
-          <h2>已分享的檔案</h2>
-          <h3>列出您帳號下所有的分享檔案</h3>
-        </hgroup>
-
-        <fieldset>
-          <legend>選擇要查詢的分享類型</legend>
-          <label>
-            <input type="radio" name="mode" value="sharedWithMe" checked />
-            別人分享給我
-          </label>
-          <label>
-            <input type="radio" name="mode" value="sharedByMe" />
-            我分享給別人
-          </label>
-        </fieldset>
-
-        <div class="actions">
-          <button id="load-files">載入分享檔案</button>
+    <div class="wrapper">
+      <!-- 側邊欄 -->
+      <div class="sidebar" data="blue">
+        <div class="sidebar-wrapper">
+          <div class="logo">
+            <a href="#" class="simple-text logo-normal">GD Share Viewer</a>
+          </div>
+          <ul class="nav">
+            <li class="active">
+              <a href="#">
+                <i class="tim-icons icon-single-02"></i>
+                <p>檔案列表</p>
+              </a>
+            </li>
+          </ul>
         </div>
-        
-        <div id="file-list"></div>
-      </section>
-    </main>
-
+      </div>
+    
+      <!-- 主內容 -->
+      <div class="main-panel">
+        <!-- 上方導覽列 -->
+        <nav class="navbar navbar-expand-lg navbar-transparent bg-primary navbar-absolute">
+          <div class="container-fluid">
+            <div class="navbar-wrapper">
+              <a class="navbar-brand" href="javascript:void(0)">Google Drive 分享檔案</a>
+            </div>
+            <button id="signin-button" class="btn btn-info btn-sm">登入</button>
+            <button id="signout-button" class="btn btn-danger btn-sm" style="display:none">登出</button>
+          </div>
+        </nav>
+    
+        <!-- 內容區 -->
+        <div class="content">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header">
+                  <h4 class="card-title">檔案清單</h4>
+                  <div class="form-group">
+                    <label>選擇要查詢的類型：</label>
+                    <select id="mode" class="form-control">
+                      <option value="sharedWithMe">別人分享給我</option>
+                      <option value="sharedByMe">我分享給別人</option>
+                    </select>
+                  </div>
+                  <button id="load-files" class="btn btn-primary">載入分享檔案</button>
+                </div>
+                <div class="card-body" id="file-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- JS -->
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://demos.creative-tim.com/black-dashboard/assets/js/black-dashboard.min.js?v=1.0.0"></script>
   </body>
 </html>

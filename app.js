@@ -1,4 +1,4 @@
-const CLIENT_ID = "799708745031-5j43u590lpnds963sdcknchqicbod3bn.apps.googleusercontent.com"; // 用你的 GCP OAuth 2.0 網頁 client_id 替換
+const CLIENT_ID = "你的 GCP OAuth Client ID"; 
 const API_KEY = "";
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly";
@@ -47,21 +47,21 @@ signinButton.onclick = () => {
     signinButton.style.display = "none";
     signoutButton.style.display = "inline-block";
   };
-  tokenClient.requestAccessToken({ prompt: "" });
+  tokenClient.requestAccessToken({ prompt: "" }); // ✅ 避免每次都跳授權
 };
 
 signoutButton.onclick = () => {
   google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
+    gapi.client.setToken(""); // 清除 token
     signinButton.style.display = "inline-block";
     signoutButton.style.display = "none";
     fileList.innerHTML = "";
-    gapi.client.setToken(null);
   });
 };
 
 loadFilesButton.onclick = async () => {
-  const mode = document.querySelector('input[name="mode"]:checked').value;
-  fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
+  const mode = document.getElementById("mode").value;
+  fileList.innerHTML = "<p>🔄 載入中...</p>";
 
   try {
     let files = [];
@@ -91,17 +91,21 @@ loadFilesButton.onclick = async () => {
       return;
     }
 
-    fileList.innerHTML = "<ul></ul>";
-    const ul = fileList.querySelector("ul");
-
+    let html = "<div class='row'>";
     files.forEach((file) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a>
-        <small>建立時間：${new Date(file.createdTime).toLocaleString()}</small>
+      html += `
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h5><a href="${file.webViewLink}" target="_blank">${file.name}</a></h5>
+              <p><small>建立時間：${new Date(file.createdTime).toLocaleString()}</small></p>
+            </div>
+          </div>
+        </div>
       `;
-      ul.appendChild(li);
     });
+    html += "</div>";
+    fileList.innerHTML = html;
 
   } catch (err) {
     console.error("載入檔案失敗：", err);
@@ -110,30 +114,17 @@ loadFilesButton.onclick = async () => {
   }
 };
 
-  
-  
-  
-  
-  
-
-// 初始化 Google API 和身份驗證
 // 初始化 Google API 和身份驗證
 window.onload = () => {
-    gapiLoaded();
-    gisLoaded();
-  
-    // 檢查登入狀態，自動顯示登入/登出按鈕
-    setTimeout(() => {
-      const token = gapi.client.getToken();
-      if (token && token.access_token) {
-        // 已登入
-        signinButton.style.display = "none";
-        signoutButton.style.display = "inline-block";
-      } else {
-        // 未登入
-        signinButton.style.display = "inline-block";
-        signoutButton.style.display = "none";
-      }
-    }, 1000); // 等待 GAPI 初始化完畢
-  };
-  
+  gapiLoaded();
+  gisLoaded();
+
+  // ✅ 自動恢復登入狀態
+  setTimeout(() => {
+    const token = gapi.client.getToken();
+    if (token && token.access_token) {
+      signinButton.style.display = "none";
+      signoutButton.style.display = "inline-block";
+    }
+  }, 1000);
+};
