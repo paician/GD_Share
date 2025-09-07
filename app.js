@@ -17,6 +17,7 @@ let fileData = {
 let authorizedAccounts = [];
 let currentAccount = null;
 
+// 這些元素可能不存在，需要檢查
 const signinButton = document.getElementById("signin-button");
 const signoutButton = document.getElementById("signout-button");
 const loadFilesButton = document.getElementById("load-files");
@@ -47,47 +48,59 @@ function gisLoaded() {
 
 function maybeEnableButtons() {
   if (gapiInited && gisInited) {
+    if (signinButton) {
     signinButton.disabled = false;
+    }
   }
 }
 
+// 只有當 signinButton 存在時才設置 onclick
+if (signinButton) {
 signinButton.onclick = () => {
   tokenClient.callback = async (resp) => {
     if (resp.error) throw resp;
-    
-    // 設置 token 到 gapi client
-    gapi.client.setToken(resp);
-    
-    // 更新側邊欄用戶狀態
-    updateSidebarUserStatus(true);
-    
-    // 自動載入數據並更新 Dashboard
-    await loadAllDataAndUpdateDashboard();
+      
+      // 設置 token 到 gapi client
+      gapi.client.setToken(resp);
+      
+      // 更新側邊欄用戶狀態
+      updateSidebarUserStatus(true);
+      
+      // 自動載入數據並更新 Dashboard
+      await loadAllDataAndUpdateDashboard();
   };
   tokenClient.requestAccessToken({ prompt: "" });
 };
+}
 
-signoutButton.onclick = () => {
-  google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
-    // 更新側邊欄用戶狀態
-    updateSidebarUserStatus(false);
-    
-    // 清空數據
-    fileData = {
-      sharedWithMe: [],
-      sharedByMe: [],
-      allFiles: []
-    };
-    
-    // 重置 Dashboard 數據
-    resetDashboardData();
-    
-    fileList.innerHTML = "";
-    gapi.client.setToken(null);
-  });
-};
+// 只有當 signoutButton 存在時才設置 onclick
+if (signoutButton) {
+  signoutButton.onclick = () => {
+    google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
+      // 更新側邊欄用戶狀態
+      updateSidebarUserStatus(false);
+      
+      // 清空數據
+      fileData = {
+        sharedWithMe: [],
+        sharedByMe: [],
+        allFiles: []
+      };
+      
+      // 重置 Dashboard 數據
+      resetDashboardData();
+      
+      if (fileList) {
+        fileList.innerHTML = "";
+      }
+      gapi.client.setToken(null);
+    });
+  };
+}
 
-loadFilesButton.onclick = async () => {
+// 只有當 loadFilesButton 存在時才設置 onclick
+if (loadFilesButton) {
+  loadFilesButton.onclick = async () => {
   const mode = document.querySelector('input[name="mode"]:checked').value;
   fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
 
@@ -223,7 +236,8 @@ loadFilesButton.onclick = async () => {
       </div>
     `;
   }
-};
+  };
+}
 
   
   
@@ -1337,8 +1351,14 @@ function updateDebugInfo() {
 
 // 初始化 Google API 和身份驗證
 window.onload = () => {
-    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108");
+    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108b");
     console.log("✅ showPage 函數已定義:", typeof window.showPage);
+    console.log("✅ 元素檢查:", {
+      signinButton: !!signinButton,
+      signoutButton: !!signoutButton,
+      loadFilesButton: !!loadFilesButton,
+      fileList: !!fileList
+    });
     
     gapiLoaded();
     gisLoaded();
