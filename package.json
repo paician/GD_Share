@@ -1,0 +1,22 @@
+{
+  "name": "dashboardkit",
+  "version": "1.0.0",
+  "description": "DashboardKit - 個人 Google Drive 管理工具",
+  "main": "index.html",
+  "scripts": {
+    "build": "node build.js",
+    "build:bash": "bash build.sh",
+    "build:bat": "build.bat",
+    "deploy": "echo 'Deploying to Cloudflare Pages'"
+  },
+  "keywords": [
+    "dashboard",
+    "google-drive",
+    "file-management",
+    "multi-account"
+  ],
+  "author": "paician",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
