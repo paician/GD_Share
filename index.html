@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Google Drive 分享檔案查看器</title>
-    <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
-    <!-- Bootstrap & Black Dashboard -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-<link href="https://demos.creative-tim.com/black-dashboard/assets/css/black-dashboard.css?v=1.0.0" rel="stylesheet" />
-
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Google Drive 分享檔案查看器</title>
+<link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
     <style>
       #file-list ul {
         list-style: none;
@@ -54,19 +50,34 @@
         100% { transform: rotate(360deg);}
       }
     </style>
-  </head>
-  <body>
-    <nav class="container-fluid">
+</head>
+<body>
+<nav class="container-fluid">
+<ul>
+<li><strong>Google Drive 分享查看器</strong></li>
+</ul>
       <ul>
-        <li><strong>Google Drive 分享查看器</strong></li>
-      </ul>
+        <li><a href="#" id="signin-button">登入</a></li>
+        <li><a href="#" id="signout-button">登出</a></li>
       <ul class="actions">
         <li><a href="#" id="signin-button" role="button" class="contrast">登入</a></li>
         <li><a href="#" id="signout-button" role="button" class="secondary">登出</a></li>
-      </ul>
-    </nav>
+</ul>
+</nav>
 
-    <main class="container">
+<main class="container">
+      <div class="grid">
+        <section>
+          <hgroup>
+            <h2>已分享的檔案</h2>
+            <h3>列出您帳號下所有的分享檔案</h3>
+          </hgroup>
+          <p>請先登入您的 Google 帳號，然後按下下方的按鈕以載入您分享的檔案。</p>
+          <label for="mode">選擇要查詢的分享類型：</label>
+          <select id="mode">
+            <option value="sharedWithMe">別人分享給我</option>
+            <option value="sharedByMe">我分享給別人</option>
+          </select>          
       <section>
         <hgroup>
           <h2>已分享的檔案</h2>
@@ -86,15 +97,19 @@
         </fieldset>
 
         <div class="actions">
-          <button id="load-files">載入分享檔案</button>
+<button id="load-files">載入分享檔案</button>
+          <div id="file-list"></div>
+        </section>
+      </div>
         </div>
         
         <div id="file-list"></div>
       </section>
-    </main>
+</main>
 
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="app.js"></script>
-  </body>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="app.js"></script>
+    
+</body>
 </html>
