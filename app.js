@@ -994,31 +994,167 @@ function displayFiles(files) {
 
   filteredFiles.forEach((file) => {
     const li = document.createElement("li");
-    li.className = "list-group-item d-flex justify-content-between align-items-start";
+    li.className = "list-group-item";
     
     const fileIcon = getFileIcon(file.name);
     
     li.innerHTML = `
-      <div class="ms-2 me-auto">
-        <div class="fw-bold">
-          <i class="${fileIcon} me-2"></i>
-          <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="ms-2 me-auto">
+          <div class="fw-bold">
+            <i class="${fileIcon} me-2"></i>
+            <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
+          </div>
+          <small class="text-muted">
+            <i class="fas fa-calendar me-1"></i>
+            建立時間：${new Date(file.createdTime).toLocaleString()}
+            ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
+            <br><i class="fas fa-share-alt me-1"></i>分享狀態：${getShareStatus(file)}
+          </small>
         </div>
-        <small class="text-muted">
-          <i class="fas fa-calendar me-1"></i>
-          建立時間：${new Date(file.createdTime).toLocaleString()}
-          ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
-          <br><i class="fas fa-share-alt me-1"></i>分享狀態：${getShareStatus(file)}
-        </small>
+        <div class="text-end">
+          <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
+          <br>
+          <small class="text-muted">${getFileAge(file.createdTime)}</small>
+          <br>
+          <button class="btn btn-sm btn-outline-primary mt-1" onclick="toggleFileDetails('${file.id}')">
+            <i class="fas fa-chevron-down" id="chevron-${file.id}"></i> 詳細
+          </button>
+        </div>
       </div>
-      <div class="text-end">
-        <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
-        <br>
-        <small class="text-muted">${getFileAge(file.createdTime)}</small>
+      <div class="file-details-content mt-3" id="details-${file.id}" style="display: none;">
+        <div class="row">
+          <div class="col-md-6">
+            <h6><i class="fas fa-info-circle text-primary me-2"></i>檔案資訊</h6>
+            <ul class="list-unstyled">
+              <li><strong>檔案名稱：</strong>${file.name}</li>
+              <li><strong>檔案大小：</strong>${file.size ? (parseInt(file.size) / 1024 / 1024).toFixed(2) + ' MB' : '未知'}</li>
+              <li><strong>建立時間：</strong>${new Date(file.createdTime).toLocaleString()}</li>
+              <li><strong>修改時間：</strong>${new Date(file.modifiedTime).toLocaleString()}</li>
+              <li><strong>檔案類型：</strong>${file.mimeType || '未知'}</li>
+              <li><strong>檔案 ID：</strong><code>${file.id}</code></li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <h6><i class="fas fa-share-alt text-success me-2"></i>分享資訊</h6>
+            <div id="share-info-${file.id}">
+              <div class="text-center">
+                <i class="fas fa-spinner fa-spin"></i> 載入分享資訊中...
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
     ul.appendChild(li);
   });
+}
+
+// 切換檔案詳細資訊顯示
+function toggleFileDetails(fileId) {
+  const detailsDiv = document.getElementById(`details-${fileId}`);
+  const chevronIcon = document.getElementById(`chevron-${fileId}`);
+  
+  if (detailsDiv.style.display === 'none') {
+    detailsDiv.style.display = 'block';
+    chevronIcon.className = 'fas fa-chevron-up';
+    
+    // 載入分享資訊
+    loadFileShareInfo(fileId);
+  } else {
+    detailsDiv.style.display = 'none';
+    chevronIcon.className = 'fas fa-chevron-down';
+  }
+}
+
+// 載入檔案分享資訊
+async function loadFileShareInfo(fileId) {
+  const shareInfoDiv = document.getElementById(`share-info-${fileId}`);
+  
+  try {
+    // 使用 Google Drive API 獲取檔案的分享權限
+    const response = await gapi.client.drive.permissions.list({
+      fileId: fileId,
+      fields: 'permissions(id,type,role,emailAddress,displayName,photoLink)'
+    });
+    
+    const permissions = response.result.permissions || [];
+    
+    if (permissions.length === 0) {
+      shareInfoDiv.innerHTML = '<p class="text-muted">此檔案未分享給任何人</p>';
+      return;
+    }
+    
+    // 過濾掉擁有者（owner）
+    const sharedPermissions = permissions.filter(p => p.role !== 'owner');
+    
+    if (sharedPermissions.length === 0) {
+      shareInfoDiv.innerHTML = '<p class="text-muted">此檔案僅為擁有者所有</p>';
+      return;
+    }
+    
+    // 顯示分享資訊
+    let shareInfoHTML = '<ul class="list-unstyled">';
+    
+    sharedPermissions.forEach(permission => {
+      const roleText = getRoleText(permission.role);
+      const userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+      
+      shareInfoHTML += `
+        <li class="mb-2">
+          <div class="d-flex align-items-center">
+            <div class="me-2">
+              ${permission.photoLink ? 
+                `<img src="${permission.photoLink}" class="rounded-circle" style="width: 24px; height: 24px;" alt="${userInfo}">` :
+                `<i class="fas fa-user-circle text-muted" style="font-size: 24px;"></i>`
+              }
+            </div>
+            <div>
+              <div class="fw-bold">${userInfo}</div>
+              <small class="text-muted">${permission.emailAddress || '無電子郵件'}</small>
+            </div>
+            <div class="ms-auto">
+              <span class="badge bg-${getRoleColor(permission.role)}">${roleText}</span>
+            </div>
+          </div>
+        </li>
+      `;
+    });
+    
+    shareInfoHTML += '</ul>';
+    shareInfoDiv.innerHTML = shareInfoHTML;
+    
+  } catch (error) {
+    console.error('載入分享資訊失敗：', error);
+    shareInfoDiv.innerHTML = `
+      <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        無法載入分享資訊：${error.message}
+      </div>
+    `;
+  }
+}
+
+// 獲取角色文字描述
+function getRoleText(role) {
+  const roleMap = {
+    'reader': '檢視者',
+    'writer': '編輯者',
+    'commenter': '評論者',
+    'owner': '擁有者'
+  };
+  return roleMap[role] || role;
+}
+
+// 獲取角色顏色
+function getRoleColor(role) {
+  const colorMap = {
+    'reader': 'secondary',
+    'writer': 'primary',
+    'commenter': 'info',
+    'owner': 'success'
+  };
+  return colorMap[role] || 'secondary';
 }
 
 // 多帳號管理功能
