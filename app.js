@@ -1022,9 +1022,22 @@ function initializeMultiAccountSystem() {
   // 從 localStorage 載入已授權的帳號
   loadAuthorizedAccounts();
   
-  // 綁定事件
-  document.getElementById('add-account-button').onclick = addNewAccount;
-  document.getElementById('manage-accounts-button').onclick = showAccountManagement;
+  // 綁定事件 - 處理重複的 ID
+  const addButtons = document.querySelectorAll('#add-account-button');
+  const manageButtons = document.querySelectorAll('#manage-accounts-button');
+  
+  console.log('🔍 找到添加帳號按鈕數量:', addButtons.length);
+  console.log('🔍 找到管理帳號按鈕數量:', manageButtons.length);
+  
+  addButtons.forEach((button, index) => {
+    button.onclick = addNewAccount;
+    console.log(`✅ 綁定添加帳號按鈕 ${index + 1}`);
+  });
+  
+  manageButtons.forEach((button, index) => {
+    button.onclick = showAccountManagement;
+    console.log(`✅ 綁定管理帳號按鈕 ${index + 1}`);
+  });
   
   // 綁定帳號選擇器事件
   const accountSelector = document.getElementById('account-selector');
