@@ -55,9 +55,17 @@ function gapiLoaded() {
 async function initializeGapiClient() {
   await gapi.client.init({
     apiKey: API_KEY,
-    discoveryDocs: DISCOVERY_DOCS,
+    discoveryDocs: [
+      'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+      'https://www.googleapis.com/discovery/v1/apis/driveactivity/v2/rest'
+    ],
   });
   gapiInited = true;
+  
+  // 檢查 API 是否正確載入
+  console.log('Drive API 可用:', !!gapi.client.drive);
+  console.log('Drive Activity API 可用:', !!gapi.client.driveactivity);
+  
   maybeEnableButtons();
 }
 
@@ -1065,10 +1073,10 @@ function displayFiles(files) {
           </div>
         </div>
       </div>
-    `;
-    ul.appendChild(li);
-  });
-  
+      `;
+      ul.appendChild(li);
+    });
+
   // 顯示檔案列表操作欄
   const fileListActions = document.getElementById('file-list-actions');
   if (fileListActions) {
@@ -1734,12 +1742,12 @@ async function loadFileAccessStats() {
   
   try {
     // 檢查 Google Drive Activity API 是否可用
-    if (!gapi.client.drive || !gapi.client.drive.activity) {
+    if (!gapi.client.driveactivity) {
       throw new Error('Google Drive Activity API 未載入，請重新整理頁面');
     }
     
     // 獲取檔案活動記錄
-    const response = await gapi.client.drive.activity.query({
+    const response = await gapi.client.driveactivity.activity.query({
       pageSize: 100,
       ancestorName: `files/${fileId}`,
       filter: `time >= "${getDateFilter(timeRange)}"`
@@ -1765,6 +1773,17 @@ async function loadFileAccessStats() {
     
   } catch (error) {
     console.error('載入存取統計失敗：', error);
+    
+    // 如果 Drive Activity API 不可用，使用備用方法
+    if (error.message.includes('Drive Activity API 未載入')) {
+      try {
+        await loadAlternativeAccessStats(fileId, timeRange, content);
+        return;
+      } catch (altError) {
+        console.error('備用存取統計也失敗：', altError);
+      }
+    }
+    
     content.innerHTML = `
       <div class="alert alert-danger">
         <i class="fas fa-exclamation-triangle me-2"></i>
@@ -1779,6 +1798,141 @@ function getDateFilter(days) {
   const date = new Date();
   date.setDate(date.getDate() - parseInt(days));
   return date.toISOString();
+}
+
+// 備用存取統計方法（當 Drive Activity API 不可用時）
+async function loadAlternativeAccessStats(fileId, timeRange, content) {
+  console.log('使用備用存取統計方法');
+  
+  // 獲取檔案詳細資訊
+  const fileResponse = await gapi.client.drive.files.get({
+    fileId: fileId,
+    fields: 'id,name,createdTime,modifiedTime,permissions,owners'
+  });
+  
+  const file = fileResponse.result;
+  
+  // 獲取分享權限資訊
+  const permissionsResponse = await gapi.client.drive.permissions.list({
+    fileId: fileId,
+    fields: 'permissions(id,type,role,emailAddress,displayName)'
+  });
+  
+  const permissions = permissionsResponse.result.permissions || [];
+  const shareCount = permissions.filter(p => p.role !== 'owner').length;
+  
+  // 模擬存取統計（基於分享對象數量和檔案修改時間）
+  const stats = {
+    totalAccess: shareCount * 2, // 模擬存取次數
+    uniqueUsers: new Set(),
+    accessByDay: {},
+    accessByType: {},
+    recentAccess: []
+  };
+  
+  // 添加分享對象到用戶列表
+  permissions.forEach(permission => {
+    if (permission.role !== 'owner') {
+      if (permission.id === 'anyoneWithLink' || permission.type === 'anyone') {
+        stats.uniqueUsers.add('知道連結的任何人');
+      } else {
+        const userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+        stats.uniqueUsers.add(userInfo);
+      }
+    }
+  });
+  
+  // 模擬最近存取記錄
+  const daysAgo = Math.floor(Math.random() * parseInt(timeRange));
+  const accessDate = new Date();
+  accessDate.setDate(accessDate.getDate() - daysAgo);
+  
+  Array.from(stats.uniqueUsers).forEach(user => {
+    stats.recentAccess.push({
+      timestamp: accessDate.toISOString(),
+      type: 'view',
+      user: user
+    });
+  });
+  
+  // 顯示備用統計結果
+  content.innerHTML = `
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle me-2"></i>
+      使用備用統計方法（基於分享權限資訊）
+    </div>
+    ${generateAlternativeStatsHTML(stats, timeRange, file)}
+  `;
+}
+
+function generateAlternativeStatsHTML(stats, timeRange, file) {
+  return `
+    <div class="row">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-primary">${stats.totalAccess}</h5>
+            <p class="card-text">模擬存取次數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-success">${stats.uniqueUsers.size}</h5>
+            <p class="card-text">分享對象數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-info">${file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : '未知'}</h5>
+            <p class="card-text">最後修改時間</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-warning">${file.createdTime ? new Date(file.createdTime).toLocaleDateString() : '未知'}</h5>
+            <p class="card-text">建立時間</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <h6>分享對象</h6>
+        <div class="list-group">
+          ${Array.from(stats.uniqueUsers).map(user => `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <span>${user}</span>
+              <span class="badge bg-primary rounded-pill">分享對象</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <h6>檔案資訊</h6>
+        <div class="list-group">
+          <div class="list-group-item">
+            <strong>檔案名稱：</strong>${file.name}
+          </div>
+          <div class="list-group-item">
+            <strong>建立時間：</strong>${file.createdTime ? new Date(file.createdTime).toLocaleString() : '未知'}
+          </div>
+          <div class="list-group-item">
+            <strong>修改時間：</strong>${file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : '未知'}
+          </div>
+          <div class="list-group-item">
+            <strong>分享對象數：</strong>${stats.uniqueUsers.size}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function analyzeActivities(activities) {
