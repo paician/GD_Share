@@ -1218,7 +1218,7 @@ function displayFiles(files) {
   fileList.innerHTML = "<ul class='list-group'></ul>";
     const ul = fileList.querySelector("ul");
 
-  filteredFiles.forEach((file) => {
+  files.forEach((file) => {
       const li = document.createElement("li");
     li.className = "list-group-item";
     
