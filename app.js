@@ -109,6 +109,38 @@ function showBootstrapConfirm(title, message, onConfirm, onCancel = null) {
   modal.show();
 }
 
+// Token 過期自動移除帳號函數
+function removeAccountDueToTokenExpiry(accountId) {
+  const account = authorizedAccounts.find(acc => acc.id === accountId);
+  const accountName = account ? (account.name || account.email) : '此帳號';
+  
+  // 自動移除帳號（不需要用戶確認）
+  authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
+  
+  if (currentAccount?.id === accountId) {
+    currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
+  }
+  
+  saveAuthorizedAccounts();
+  updateAuthorizedAccountsDisplay();
+  
+  if (currentAccount) {
+    gapi.client.setToken({ access_token: currentAccount.accessToken });
+    loadAllDataAndUpdateDashboard();
+  } else {
+    // 沒有帳號了，清空資料
+    fileData = { sharedWithMe: [], sharedByMe: [], allFiles: [] };
+    updateDashboard();
+  }
+  
+  // 顯示 Token 過期通知
+  showBootstrapAlert(
+    `🔐 ${accountName} 的授權已過期\n\n系統已自動移除該帳號，請重新新增以繼續使用。`,
+    'warning',
+    8000 // 顯示 8 秒，讓用戶有足夠時間閱讀
+  );
+}
+
 function initializeCredentials() {
   CLIENT_ID = window.GOOGLE_CLIENT_ID || "";
   API_KEY = window.GOOGLE_API_KEY || "";
@@ -3132,9 +3164,9 @@ window.onload = () => {
           await loadAllDataAndUpdateDashboard();
           console.log('自動載入資料完成');
       } else {
-          // Token 過期，移除該帳號
-          removeAccount(currentAccount.id);
-          console.log('Token 已過期，已移除帳號');
+          // Token 過期，自動移除該帳號
+          removeAccountDueToTokenExpiry(currentAccount.id);
+          console.log('Token 已過期，已自動移除帳號');
         }
       } else {
         console.log('沒有已授權的帳號，需要手動登入');
