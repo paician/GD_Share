@@ -677,19 +677,29 @@
                   <option value="year">本年</option>
                 </select>
               </div>
-              <div class="col-md-4">
-                <label class="form-label">檔案類型</label>
-                <select id="file-type" class="form-select">
-                  <option value="all">全部類型</option>
-                  <option value="pdf">PDF</option>
-                  <option value="doc">Word</option>
-                  <option value="xls">Excel</option>
-                  <option value="ppt">PowerPoint</option>
-                  <option value="png">PNG 圖片</option>
-                  <option value="jpg">JPG 圖片</option>
-                  <option value="mp4">影片</option>
-                </select>
-              </div>
+               <div class="col-md-4">
+                 <label class="form-label">檔案類型</label>
+                 <select id="file-type" class="form-select">
+                   <option value="all">全部類型</option>
+                   <option value="pdf">PDF</option>
+                   <option value="doc">Word</option>
+                   <option value="xls">Excel</option>
+                   <option value="ppt">PowerPoint</option>
+                   <option value="png">PNG 圖片</option>
+                   <option value="jpg">JPG 圖片</option>
+                   <option value="mp4">影片</option>
+                 </select>
+               </div>
+               <div class="col-md-4">
+                 <label class="form-label">分享權限</label>
+                 <select id="share-permission" class="form-select">
+                   <option value="all">全部權限</option>
+                   <option value="reader">僅檢視者</option>
+                   <option value="writer">編輯者</option>
+                   <option value="commenter">評論者</option>
+                   <option value="anyoneWithLink">公開分享</option>
+                 </select>
+               </div>
               <div class="col-md-4">
                 <label class="form-label">排序方式</label>
                 <select id="sort-by" class="form-select">
@@ -700,14 +710,19 @@
               </div>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <button id="load-files" class="btn btn-primary">
-                <i class="fas fa-sync me-1"></i>載入分享檔案
-              </button>
-              <div class="text-muted">
-                <span id="file-count">0</span> 個檔案
-              </div>
-            </div>
+             <div class="d-flex justify-content-between align-items-center mb-3">
+               <div>
+                 <button id="load-files" class="btn btn-primary me-2">
+                   <i class="fas fa-sync me-1"></i>載入分享檔案
+                 </button>
+                 <button id="batch-edit-permissions" class="btn btn-warning" onclick="showBatchEditModal()" disabled>
+                   <i class="fas fa-edit me-1"></i>批次修改權限
+                 </button>
+               </div>
+               <div class="text-muted">
+                 <span id="file-count">0</span> 個檔案
+               </div>
+             </div>
             
             <div id="file-list" class="mt-4"></div>
           </div>
@@ -815,12 +830,76 @@
     </div>
   </div>
 
+  <!-- 批次修改權限模態框 -->
+  <div class="modal fade" id="batchEditModal" tabindex="-1" aria-labelledby="batchEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="batchEditModalLabel">
+            <i class="fas fa-edit me-2"></i>批次修改分享權限
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            此功能將對選中的檔案進行批次權限修改。請謹慎操作！
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">選擇要修改的檔案</label>
+            <div id="file-selection-list" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+              <p class="text-muted text-center">請先載入檔案列表</p>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">新的分享權限</label>
+            <select id="new-permission-role" class="form-select">
+              <option value="reader">檢視者 (只能查看)</option>
+              <option value="commenter">評論者 (可以評論)</option>
+              <option value="writer">編輯者 (可以編輯)</option>
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">分享對象</label>
+            <div class="input-group">
+              <input type="email" id="share-email" class="form-control" placeholder="輸入電子郵件地址">
+              <button class="btn btn-outline-secondary" type="button" onclick="addShareRecipient()">
+                <i class="fas fa-plus"></i> 新增
+              </button>
+            </div>
+            <div id="share-recipients" class="mt-2">
+              <!-- 動態生成的分享對象列表 -->
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="remove-existing-permissions">
+              <label class="form-check-label" for="remove-existing-permissions">
+                移除現有的分享權限（除了擁有者）
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-warning" onclick="executeBatchPermissionUpdate()">
+            <i class="fas fa-save me-1"></i>執行批次修改
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- JS -->
   <script src="config.js"></script>
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js?v=20250108i"></script>
+  <script src="app.js?v=20250108j"></script>
 </body>
 </html>

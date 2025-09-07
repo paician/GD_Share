@@ -190,40 +190,14 @@ loadFilesButton.onclick = async () => {
     // 應用篩選和搜尋
     const filteredFiles = applyFiltersAndSearch(files);
     
-    // 更新檔案計數
-    document.getElementById('file-count').textContent = filteredFiles.length;
+    // 使用 displayFiles 函數來顯示檔案（包含詳細按鈕）
+    displayFiles(files);
     
-    fileList.innerHTML = "<ul class='list-group'></ul>";
-    const ul = fileList.querySelector("ul");
-
-    filteredFiles.forEach((file) => {
-      const li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-start";
-      
-      // 獲取檔案圖標
-      const fileIcon = getFileIcon(file.name);
-      
-      li.innerHTML = `
-        <div class="ms-2 me-auto">
-          <div class="fw-bold">
-            <i class="${fileIcon} me-2"></i>
-            <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
-          </div>
-          <small class="text-muted">
-            <i class="fas fa-calendar me-1"></i>
-            建立時間：${new Date(file.createdTime).toLocaleString()}
-            ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
-            <br><i class="fas fa-share-alt me-1"></i>分享狀態：${getShareStatus(file)}
-          </small>
-        </div>
-        <div class="text-end">
-          <span class="badge bg-primary rounded-pill mb-1">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
-          <br>
-          <small class="text-muted">${getFileAge(file.createdTime)}</small>
-        </div>
-      `;
-      ul.appendChild(li);
-    });
+    // 啟用批次修改按鈕
+    const batchEditButton = document.getElementById('batch-edit-permissions');
+    if (batchEditButton) {
+      batchEditButton.disabled = false;
+    }
 
     // 更新儀表板資料
     updateDashboard();
@@ -888,6 +862,16 @@ function applyFiltersAndSearch(files) {
     });
   }
   
+  // 分享權限篩選
+  const sharePermission = document.getElementById('share-permission').value;
+  if (sharePermission !== 'all') {
+    filteredFiles = filteredFiles.filter(file => {
+      // 這裡需要檢查檔案的分享權限
+      // 暫時使用簡單的檢查，實際應該調用 API 獲取權限資訊
+      return true; // 暫時返回 true，後續會實現具體的權限檢查
+    });
+  }
+  
   // 排序
   const sortBy = document.getElementById('sort-by').value;
   filteredFiles.sort((a, b) => {
@@ -1098,7 +1082,16 @@ async function loadFileShareInfo(fileId) {
     
     sharedPermissions.forEach(permission => {
       const roleText = getRoleText(permission.role);
-      const userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+      let userInfo, userEmail;
+      
+      // 處理 anyoneWithLink 特殊情況
+      if (permission.id === 'anyoneWithLink' || permission.type === 'anyone') {
+        userInfo = '知道連結的任何人';
+        userEmail = '公開分享';
+      } else {
+        userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+        userEmail = permission.emailAddress || '無電子郵件';
+      }
       
       shareInfoHTML += `
         <li class="mb-2">
@@ -1111,7 +1104,7 @@ async function loadFileShareInfo(fileId) {
             </div>
             <div>
               <div class="fw-bold">${userInfo}</div>
-              <small class="text-muted">${permission.emailAddress || '無電子郵件'}</small>
+              <small class="text-muted">${userEmail}</small>
             </div>
             <div class="ms-auto">
               <span class="badge bg-${getRoleColor(permission.role)}">${roleText}</span>
@@ -1155,6 +1148,212 @@ function getRoleColor(role) {
     'owner': 'success'
   };
   return colorMap[role] || 'secondary';
+}
+
+// 批次修改權限功能
+let selectedFiles = [];
+let shareRecipients = [];
+
+// 顯示批次修改模態框
+function showBatchEditModal() {
+  const modal = new bootstrap.Modal(document.getElementById('batchEditModal'));
+  
+  // 生成檔案選擇列表
+  generateFileSelectionList();
+  
+  modal.show();
+}
+
+// 生成檔案選擇列表
+function generateFileSelectionList() {
+  const fileSelectionList = document.getElementById('file-selection-list');
+  const files = fileData.allFiles || [];
+  
+  if (files.length === 0) {
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">請先載入檔案列表</p>';
+    return;
+  }
+  
+  let html = '<div class="row">';
+  files.forEach((file, index) => {
+    const fileIcon = getFileIcon(file.name);
+    html += `
+      <div class="col-md-6 mb-2">
+        <div class="form-check">
+          <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-${index}">
+          <label class="form-check-label" for="file-${index}">
+            <i class="${fileIcon} me-2"></i>
+            <span class="text-truncate" style="max-width: 200px;" title="${file.name}">${file.name}</span>
+          </label>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  
+  fileSelectionList.innerHTML = html;
+  
+  // 綁定選擇事件
+  document.querySelectorAll('.file-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedFiles);
+  });
+}
+
+// 更新選中的檔案
+function updateSelectedFiles() {
+  selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+  console.log('選中的檔案：', selectedFiles);
+}
+
+// 新增分享對象
+function addShareRecipient() {
+  const emailInput = document.getElementById('share-email');
+  const email = emailInput.value.trim();
+  
+  if (!email) {
+    alert('請輸入電子郵件地址');
+    return;
+  }
+  
+  if (!isValidEmail(email)) {
+    alert('請輸入有效的電子郵件地址');
+    return;
+  }
+  
+  if (shareRecipients.includes(email)) {
+    alert('此電子郵件地址已存在');
+    return;
+  }
+  
+  shareRecipients.push(email);
+  emailInput.value = '';
+  updateShareRecipientsDisplay();
+}
+
+// 更新分享對象顯示
+function updateShareRecipientsDisplay() {
+  const recipientsDiv = document.getElementById('share-recipients');
+  
+  if (shareRecipients.length === 0) {
+    recipientsDiv.innerHTML = '<p class="text-muted">尚未新增分享對象</p>';
+    return;
+  }
+  
+  let html = '';
+  shareRecipients.forEach((email, index) => {
+    html += `
+      <span class="badge bg-primary me-2 mb-2">
+        ${email}
+        <button type="button" class="btn-close btn-close-white ms-1" onclick="removeShareRecipient(${index})" style="font-size: 0.7em;"></button>
+      </span>
+    `;
+  });
+  
+  recipientsDiv.innerHTML = html;
+}
+
+// 移除分享對象
+function removeShareRecipient(index) {
+  shareRecipients.splice(index, 1);
+  updateShareRecipientsDisplay();
+}
+
+// 驗證電子郵件格式
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+// 執行批次權限修改
+async function executeBatchPermissionUpdate() {
+  if (selectedFiles.length === 0) {
+    alert('請選擇要修改的檔案');
+    return;
+  }
+  
+  if (shareRecipients.length === 0) {
+    alert('請新增至少一個分享對象');
+    return;
+  }
+  
+  const role = document.getElementById('new-permission-role').value;
+  const removeExisting = document.getElementById('remove-existing-permissions').checked;
+  
+  if (!confirm(`確定要對 ${selectedFiles.length} 個檔案執行批次權限修改嗎？\n\n新的權限：${getRoleText(role)}\n分享對象：${shareRecipients.join(', ')}\n${removeExisting ? '將移除現有權限' : '將保留現有權限'}`)) {
+    return;
+  }
+  
+  try {
+    let successCount = 0;
+    let errorCount = 0;
+    
+    for (const fileId of selectedFiles) {
+      try {
+        // 如果需要移除現有權限
+        if (removeExisting) {
+          await removeExistingPermissions(fileId);
+        }
+        
+        // 為每個分享對象添加權限
+        for (const email of shareRecipients) {
+          await addFilePermission(fileId, email, role);
+        }
+        
+        successCount++;
+      } catch (error) {
+        console.error(`修改檔案 ${fileId} 權限失敗：`, error);
+        errorCount++;
+      }
+    }
+    
+    alert(`批次修改完成！\n成功：${successCount} 個檔案\n失敗：${errorCount} 個檔案`);
+    
+    // 關閉模態框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('batchEditModal'));
+    modal.hide();
+    
+    // 重新載入檔案列表
+    await loadAllDataAndUpdateDashboard();
+    
+  } catch (error) {
+    console.error('批次修改失敗：', error);
+    alert('批次修改失敗：' + error.message);
+  }
+}
+
+// 移除檔案的現有權限（除了擁有者）
+async function removeExistingPermissions(fileId) {
+  const response = await gapi.client.drive.permissions.list({
+    fileId: fileId,
+    fields: 'permissions(id,role)'
+  });
+  
+  const permissions = response.result.permissions || [];
+  
+  for (const permission of permissions) {
+    if (permission.role !== 'owner') {
+      try {
+        await gapi.client.drive.permissions.delete({
+          fileId: fileId,
+          permissionId: permission.id
+        });
+      } catch (error) {
+        console.warn(`無法移除權限 ${permission.id}：`, error);
+      }
+    }
+  }
+}
+
+// 為檔案添加權限
+async function addFilePermission(fileId, email, role) {
+  await gapi.client.drive.permissions.create({
+    fileId: fileId,
+    resource: {
+      role: role,
+      type: 'user',
+      emailAddress: email
+    }
+  });
 }
 
 // 多帳號管理功能
