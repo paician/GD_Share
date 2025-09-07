@@ -1337,6 +1337,9 @@ function updateDebugInfo() {
 
 // 初始化 Google API 和身份驗證
 window.onload = () => {
+    console.log("🚀 DashboardKit 初始化開始 - 版本 20250108");
+    console.log("✅ showPage 函數已定義:", typeof window.showPage);
+    
     gapiLoaded();
     gisLoaded();
   

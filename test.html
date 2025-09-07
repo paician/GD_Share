@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DashboardKit 測試頁面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>DashboardKit 功能測試</h1>
+    
+    <div class="test-section">
+        <h3>JavaScript 函數測試</h3>
+        <button onclick="testShowPage()">測試 showPage 函數</button>
+        <button onclick="testClearSearch()">測試 clearSearch 函數</button>
+        <button onclick="testRemoveAccount()">測試 removeAccount 函數</button>
+        <div id="test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>頁面導航測試</h3>
+        <button onclick="showPage('dashboard')">Dashboard</button>
+        <button onclick="showPage('files')">Files</button>
+        <button onclick="showPage('statistics')">Statistics</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>控制台輸出</h3>
+        <p>請打開瀏覽器開發者工具 (F12) 查看控制台輸出</p>
+    </div>
+
+    <script src="app.js?v=20250108"></script>
+    <script>
+        function testShowPage() {
+            const result = document.getElementById('test-results');
+            try {
+                if (typeof window.showPage === 'function') {
+                    result.innerHTML = '<div class="success">✅ showPage 函數正常</div>';
+                } else {
+                    result.innerHTML = '<div class="error">❌ showPage 函數未定義</div>';
+                }
+            } catch (err) {
+                result.innerHTML = '<div class="error">❌ showPage 函數錯誤: ' + err.message + '</div>';
+            }
+        }
+        
+        function testClearSearch() {
+            const result = document.getElementById('test-results');
+            try {
+                if (typeof window.clearSearch === 'function') {
+                    result.innerHTML = '<div class="success">✅ clearSearch 函數正常</div>';
+                } else {
+                    result.innerHTML = '<div class="error">❌ clearSearch 函數未定義</div>';
+                }
+            } catch (err) {
+                result.innerHTML = '<div class="error">❌ clearSearch 函數錯誤: ' + err.message + '</div>';
+            }
+        }
+        
+        function testRemoveAccount() {
+            const result = document.getElementById('test-results');
+            try {
+                if (typeof window.removeAccount === 'function') {
+                    result.innerHTML = '<div class="success">✅ removeAccount 函數正常</div>';
+                } else {
+                    result.innerHTML = '<div class="error">❌ removeAccount 函數未定義</div>';
+                }
+            } catch (err) {
+                result.innerHTML = '<div class="error">❌ removeAccount 函數錯誤: ' + err.message + '</div>';
+            }
+        }
+        
+        // 頁面載入時自動測試
+        window.addEventListener('load', function() {
+            console.log("🧪 測試頁面載入完成");
+            setTimeout(() => {
+                testShowPage();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
