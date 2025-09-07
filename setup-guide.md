@@ -16,23 +16,26 @@
 https://paician.github.io
 https://*.github.io
 https://your-custom-domain.com (如果使用自定義域名)
+https://your-project.pages.dev (Cloudflare Pages 域名)
 ```
 
 #### 授權的重新導向 URI：
 ```
 https://paician.github.io/GD_Share/
 https://your-custom-domain.com/ (如果使用自定義域名)
+https://your-project.pages.dev/ (Cloudflare Pages 域名)
 ```
 
 ### 3. 部署選項
 
-#### 選項A: GitHub Pages (推薦)
+#### 選項A: Cloudflare Pages (推薦)
+- 優點：免費、快速 CDN、環境變數支援、自定義域名
+- 設置：使用 Cloudflare 環境變數存儲憑證
+- 部署：自動從 GitHub 部署
+
+#### 選項B: GitHub Pages
 - 優點：免費、簡單、與 GitHub 整合
 - 設置：使用 GitHub Secrets 存儲憑證
-
-#### 選項B: Cloudflare Pages
-- 優點：更快的 CDN、更好的性能
-- 設置：使用 Cloudflare 環境變數
 
 #### 選項C: Vercel
 - 優點：優秀的開發者體驗
