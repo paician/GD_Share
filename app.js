@@ -1701,6 +1701,10 @@ function showAccessStats() {
   // 生成檔案選擇器
   generateStatsFileSelector();
   
+  // 添加調試資訊
+  console.log('檔案列表總數:', fileData.allFiles.length);
+  console.log('當前用戶:', currentAccount);
+  
   modal.show();
 }
 
@@ -1903,7 +1907,16 @@ async function loadSimpleAccessStats(fileId, content) {
   console.log('使用簡單備用統計方法');
   
   try {
-    // 只獲取基本的檔案資訊
+    // 嘗試從已載入的檔案列表中獲取資訊
+    const existingFile = fileData.allFiles.find(f => f.id === fileId);
+    
+    if (existingFile) {
+      console.log('從已載入的檔案列表中獲取資訊');
+      displaySimpleStatsFromExistingFile(existingFile, content);
+      return;
+    }
+    
+    // 如果沒有現有資訊，嘗試直接獲取
     const fileResponse = await gapi.client.drive.files.get({
       fileId: fileId,
       fields: 'id,name,createdTime,modifiedTime'
@@ -1945,6 +1958,99 @@ async function loadSimpleAccessStats(fileId, content) {
     console.error('簡單備用方法失敗：', error);
     throw error;
   }
+}
+
+// 從已載入的檔案顯示簡單統計
+function displaySimpleStatsFromExistingFile(file, content) {
+  console.log('顯示已載入檔案的統計資訊');
+  
+  // 計算分享對象數量
+  const shareCount = file.permissions ? file.permissions.filter(p => p.role !== 'owner').length : 0;
+  
+  content.innerHTML = `
+    <div class="alert alert-success">
+      <i class="fas fa-check-circle me-2"></i>
+      使用已載入的檔案資訊（無需額外 API 調用）
+    </div>
+    <div class="row">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-primary">${shareCount * 2}</h5>
+            <p class="card-text">模擬存取次數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-success">${shareCount}</h5>
+            <p class="card-text">分享對象數</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-info">${file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : '未知'}</h5>
+            <p class="card-text">最後修改時間</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-warning">${file.createdTime ? new Date(file.createdTime).toLocaleDateString() : '未知'}</h5>
+            <p class="card-text">建立時間</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <h6>分享對象</h6>
+        <div class="list-group">
+          ${file.permissions ? file.permissions.filter(p => p.role !== 'owner').map(permission => {
+            const userInfo = permission.id === 'anyoneWithLink' || permission.type === 'anyone' 
+              ? '知道連結的任何人' 
+              : (permission.displayName || permission.emailAddress || '未知用戶');
+            return `
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>${userInfo}</span>
+                <span class="badge bg-primary rounded-pill">${permission.role}</span>
+              </div>
+            `;
+          }).join('') : '<div class="list-group-item text-muted">無分享對象</div>'}
+        </div>
+      </div>
+      <div class="col-md-6">
+        <h6>檔案資訊</h6>
+        <div class="list-group">
+          <div class="list-group-item">
+            <strong>檔案名稱：</strong>${file.name}
+          </div>
+          <div class="list-group-item">
+            <strong>建立時間：</strong>${file.createdTime ? new Date(file.createdTime).toLocaleString() : '未知'}
+          </div>
+          <div class="list-group-item">
+            <strong>修改時間：</strong>${file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : '未知'}
+          </div>
+          <div class="list-group-item">
+            <strong>分享對象數：</strong>${shareCount}
+          </div>
+          <div class="list-group-item">
+            <strong>檔案大小：</strong>${file.size ? (parseInt(file.size) / 1024 / 1024).toFixed(2) + ' MB' : '未知'}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="alert alert-info mt-3">
+      <i class="fas fa-info-circle me-2"></i>
+      此統計基於已載入的檔案資訊。如需即時存取記錄，請確保 Drive Activity API 權限正確設定。
+    </div>
+  `;
 }
 
 function generateAlternativeStatsHTML(stats, timeRange, file) {
