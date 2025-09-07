@@ -569,7 +569,18 @@
         </div>
 
         <!-- 數據載入提示 -->
-        <div class="d-flex justify-content-end mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div id="debug-panel" class="text-muted" style="display: none;">
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleDebugInfo()">
+              <i class="fas fa-bug me-1"></i>調試信息
+            </button>
+            <div id="debug-info" class="mt-2 p-2 bg-light rounded" style="display: none; font-size: 12px;">
+              <div><strong>API 狀態:</strong> <span id="api-status">檢查中...</span></div>
+              <div><strong>登入狀態:</strong> <span id="login-status">未登入</span></div>
+              <div><strong>權限範圍:</strong> <span id="scope-status">檢查中...</span></div>
+              <div><strong>檔案數據:</strong> <span id="file-data-status">無</span></div>
+            </div>
+          </div>
           <div id="data-status" class="text-muted">
             <i class="fas fa-info-circle me-1"></i>
             <span id="data-status-text">登入後將顯示真實數據</span>

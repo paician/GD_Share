@@ -1,7 +1,7 @@
 const CLIENT_ID = "799708745031-5j43u590lpnds963sdcknchqicbod3bn.apps.googleusercontent.com"; // 用你的 GCP OAuth 2.0 網頁 client_id 替換
-const API_KEY = "";
+const API_KEY = ""; // 如果需要 API Key，請在這裡填入
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly";
+const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly";
 
 let tokenClient;
 let gapiInited = false;
@@ -85,25 +85,38 @@ loadFilesButton.onclick = async () => {
   fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
 
   try {
+    // 檢查是否已登入
+    const token = gapi.client.getToken();
+    if (!token || !token.access_token) {
+      fileList.innerHTML = "<p>⚠️ 請先登入 Google 帳戶</p>";
+      return;
+    }
+
+    console.log("開始載入檔案，模式：", mode);
     let files = [];
 
     if (mode === "sharedWithMe") {
+      console.log("載入分享給我的檔案...");
       const response = await gapi.client.drive.files.list({
         pageSize: 100,
         q: "sharedWithMe",
-        fields: "files(id, name, webViewLink, createdTime, permissions, size)"
+        fields: "files(id, name, webViewLink, createdTime, permissions, size, mimeType)"
       });
-      files = response.result.files;
+      console.log("分享給我回應：", response);
+      files = response.result.files || [];
       fileData.sharedWithMe = files;
     }
 
     if (mode === "sharedByMe") {
+      console.log("載入我分享的檔案...");
       const response = await gapi.client.drive.files.list({
         pageSize: 100,
         q: "trashed = false",
-        fields: "files(id, name, webViewLink, createdTime, permissions, owners, size)"
+        fields: "files(id, name, webViewLink, createdTime, permissions, owners, size, mimeType)"
       });
-      files = response.result.files.filter(file =>
+      console.log("我分享的回應：", response);
+      const allFiles = response.result.files || [];
+      files = allFiles.filter(file =>
         file.permissions && file.permissions.some(p => p.role !== "owner")
       );
       fileData.sharedByMe = files;
@@ -112,19 +125,42 @@ loadFilesButton.onclick = async () => {
     // 更新所有檔案列表
     fileData.allFiles = [...fileData.sharedWithMe, ...fileData.sharedByMe];
 
+    console.log("載入完成，檔案數量：", files.length);
+
     if (!files || files.length === 0) {
-      fileList.innerHTML = "<p>⚠️ 沒有找到符合的分享檔案。</p>";
+      fileList.innerHTML = `
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          沒有找到符合的分享檔案。請確認：
+          <ul class="mt-2">
+            <li>您是否有與他人分享的檔案</li>
+            <li>是否有其他人分享檔案給您</li>
+            <li>檔案是否已被刪除或權限已變更</li>
+          </ul>
+        </div>
+      `;
       return;
     }
 
-    fileList.innerHTML = "<ul></ul>";
+    fileList.innerHTML = "<ul class='list-group'></ul>";
     const ul = fileList.querySelector("ul");
 
     files.forEach((file) => {
       const li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-start";
       li.innerHTML = `
-        📄 <a href="${file.webViewLink}" target="_blank">${file.name}</a>
-        <small>建立時間：${new Date(file.createdTime).toLocaleString()}</small>
+        <div class="ms-2 me-auto">
+          <div class="fw-bold">
+            <i class="fas fa-file me-2"></i>
+            <a href="${file.webViewLink}" target="_blank" class="text-decoration-none">${file.name}</a>
+          </div>
+          <small class="text-muted">
+            <i class="fas fa-calendar me-1"></i>
+            建立時間：${new Date(file.createdTime).toLocaleString()}
+            ${file.size ? `<br><i class="fas fa-hdd me-1"></i>大小：${(parseInt(file.size) / 1024 / 1024).toFixed(2)} MB` : ''}
+          </small>
+        </div>
+        <span class="badge bg-primary rounded-pill">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
       `;
       ul.appendChild(li);
     });
@@ -134,8 +170,36 @@ loadFilesButton.onclick = async () => {
 
   } catch (err) {
     console.error("載入檔案失敗：", err);
-    const message = err.result?.error?.message || "未知錯誤";
-    fileList.innerHTML = `<p>⚠️ 發生錯誤：${message}</p>`;
+    console.error("錯誤詳情：", err.result);
+    
+    let errorMessage = "未知錯誤";
+    let errorDetails = "";
+    
+    if (err.result?.error) {
+      errorMessage = err.result.error.message || "API 錯誤";
+      errorDetails = err.result.error.details || "";
+    } else if (err.message) {
+      errorMessage = err.message;
+    }
+    
+    fileList.innerHTML = `
+      <div class="alert alert-danger">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>載入檔案失敗</h5>
+        <p><strong>錯誤訊息：</strong> ${errorMessage}</p>
+        ${errorDetails ? `<p><strong>詳細資訊：</strong> ${errorDetails}</p>` : ''}
+        <hr>
+        <p><strong>可能的解決方案：</strong></p>
+        <ul>
+          <li>確認您已正確登入 Google 帳戶</li>
+          <li>檢查 Google Drive API 是否已啟用</li>
+          <li>確認 OAuth 2.0 設定正確</li>
+          <li>檢查網路連線是否正常</li>
+        </ul>
+        <button class="btn btn-outline-danger btn-sm mt-2" onclick="location.reload()">
+          <i class="fas fa-refresh me-1"></i>重新載入頁面
+        </button>
+      </div>
+    `;
   }
 };
 
@@ -172,32 +236,40 @@ async function loadAllDataAndUpdateDashboard() {
     const dataStatusText = document.getElementById('data-status-text');
     dataStatusText.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>正在載入數據...';
     
+    console.log("開始自動載入 Dashboard 數據...");
+    
     // 載入分享給我的檔案
+    console.log("載入分享給我的檔案...");
     const sharedWithMeResponse = await gapi.client.drive.files.list({
       pageSize: 100,
       q: "sharedWithMe",
-      fields: "files(id, name, webViewLink, createdTime, permissions, size)"
+      fields: "files(id, name, webViewLink, createdTime, permissions, size, mimeType)"
     });
     fileData.sharedWithMe = sharedWithMeResponse.result.files || [];
+    console.log("分享給我檔案數量：", fileData.sharedWithMe.length);
     
     // 載入我分享的檔案
+    console.log("載入我分享的檔案...");
     const sharedByMeResponse = await gapi.client.drive.files.list({
       pageSize: 100,
       q: "trashed = false",
-      fields: "files(id, name, webViewLink, createdTime, permissions, owners, size)"
+      fields: "files(id, name, webViewLink, createdTime, permissions, owners, size, mimeType)"
     });
-    fileData.sharedByMe = (sharedByMeResponse.result.files || []).filter(file =>
+    const allMyFiles = sharedByMeResponse.result.files || [];
+    fileData.sharedByMe = allMyFiles.filter(file =>
       file.permissions && file.permissions.some(p => p.role !== "owner")
     );
+    console.log("我分享的檔案數量：", fileData.sharedByMe.length);
     
     // 合併所有檔案
     fileData.allFiles = [...fileData.sharedWithMe, ...fileData.sharedByMe];
+    console.log("總檔案數量：", fileData.allFiles.length);
     
     // 更新 Dashboard
     updateDashboard();
     
     // 更新數據狀態提示
-    dataStatusText.innerHTML = '<i class="fas fa-check-circle me-1"></i>數據已載入完成';
+    dataStatusText.innerHTML = `<i class="fas fa-check-circle me-1"></i>數據已載入完成 (${fileData.allFiles.length} 個檔案)`;
     
     // 3秒後隱藏提示
     setTimeout(() => {
@@ -206,8 +278,28 @@ async function loadAllDataAndUpdateDashboard() {
     
   } catch (err) {
     console.error("載入數據失敗：", err);
+    console.error("錯誤詳情：", err.result);
+    
     const dataStatusText = document.getElementById('data-status-text');
-    dataStatusText.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>載入數據失敗';
+    let errorMsg = "載入數據失敗";
+    
+    if (err.result?.error) {
+      errorMsg = `載入失敗: ${err.result.error.message}`;
+    } else if (err.message) {
+      errorMsg = `載入失敗: ${err.message}`;
+    }
+    
+    dataStatusText.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>${errorMsg}`;
+    
+    // 5秒後顯示重試按鈕
+    setTimeout(() => {
+      dataStatusText.innerHTML = `
+        <i class="fas fa-exclamation-triangle me-1"></i>${errorMsg}
+        <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadAllDataAndUpdateDashboard()">
+          <i class="fas fa-redo me-1"></i>重試
+        </button>
+      `;
+    }, 2000);
   }
 }
 
@@ -615,6 +707,50 @@ function updateProfile() {
   document.getElementById('last-login').value = new Date().toLocaleString();
 }
 
+// 調試功能
+function toggleDebugInfo() {
+  const debugInfo = document.getElementById('debug-info');
+  debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+  updateDebugInfo();
+}
+
+function updateDebugInfo() {
+  const apiStatus = document.getElementById('api-status');
+  const loginStatus = document.getElementById('login-status');
+  const scopeStatus = document.getElementById('scope-status');
+  const fileDataStatus = document.getElementById('file-data-status');
+  
+  // API 狀態
+  if (gapiInited && gisInited) {
+    apiStatus.textContent = '已初始化';
+    apiStatus.className = 'text-success';
+  } else {
+    apiStatus.textContent = '初始化中...';
+    apiStatus.className = 'text-warning';
+  }
+  
+  // 登入狀態
+  const token = gapi.client.getToken();
+  if (token && token.access_token) {
+    loginStatus.textContent = '已登入';
+    loginStatus.className = 'text-success';
+  } else {
+    loginStatus.textContent = '未登入';
+    loginStatus.className = 'text-danger';
+  }
+  
+  // 權限範圍
+  scopeStatus.textContent = SCOPES;
+  scopeStatus.className = 'text-info';
+  
+  // 檔案數據
+  const totalFiles = fileData.allFiles.length;
+  const sharedWithMe = fileData.sharedWithMe.length;
+  const sharedByMe = fileData.sharedByMe.length;
+  fileDataStatus.textContent = `總計: ${totalFiles}, 分享給我: ${sharedWithMe}, 我分享: ${sharedByMe}`;
+  fileDataStatus.className = totalFiles > 0 ? 'text-success' : 'text-muted';
+}
+
 // 初始化 Google API 和身份驗證
 window.onload = () => {
     gapiLoaded();
@@ -624,6 +760,12 @@ window.onload = () => {
     setTimeout(() => {
       createCharts();
     }, 500);
+    
+    // 顯示調試面板
+    setTimeout(() => {
+      document.getElementById('debug-panel').style.display = 'block';
+      updateDebugInfo();
+    }, 2000);
   
     // 檢查登入狀態，自動顯示登入/登出按鈕
     setTimeout(() => {
@@ -637,6 +779,7 @@ window.onload = () => {
         // 未登入
         updateSidebarUserStatus(false);
       }
+      updateDebugInfo();
     }, 1000); // 等待 GAPI 初始化完畢
   };
   
