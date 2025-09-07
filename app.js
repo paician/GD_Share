@@ -1258,7 +1258,7 @@ let removeSelectedRecipients = [];
 function showBatchEditModal() {
   const modal = new bootstrap.Modal(document.getElementById('batchEditModal'));
   
-  // 生成檔案選擇列表
+  // 生成檔案選擇列表（只顯示已選中的檔案）
   generateFileSelectionList();
   
   modal.show();
@@ -1268,21 +1268,44 @@ function showBatchEditModal() {
 function generateFileSelectionList() {
   const fileSelectionList = document.getElementById('file-selection-list');
   
-  // 使用當前篩選結果的檔案，而不是全部檔案
-  const files = applyFiltersAndSearch(fileData.allFiles || []);
+  // 獲取在檔案列表中已選中的檔案
+  const selectedFileIds = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
   
-  if (files.length === 0) {
-    fileSelectionList.innerHTML = '<p class="text-muted text-center">沒有符合篩選條件的檔案</p>';
+  if (selectedFileIds.length === 0) {
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">請先在檔案列表中選擇要修改的檔案</p>';
     return;
   }
   
-  let html = '';
-  files.forEach((file, index) => {
+  // 根據選中的檔案 ID 獲取檔案資訊
+  const selectedFiles = fileData.allFiles.filter(file => selectedFileIds.includes(file.id));
+  
+  if (selectedFiles.length === 0) {
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">找不到選中的檔案</p>';
+    return;
+  }
+  
+  let html = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <button class="btn btn-sm btn-outline-primary me-2" onclick="selectAllBatchFiles()">
+          <i class="fas fa-check-square me-1"></i>全選
+        </button>
+        <button class="btn btn-sm btn-outline-secondary me-2" onclick="deselectAllBatchFiles()">
+          <i class="fas fa-square me-1"></i>取消全選
+        </button>
+        <span class="text-muted">
+          已選擇 <span id="batch-selected-count">${selectedFiles.length}</span> 個檔案
+        </span>
+      </div>
+    </div>
+  `;
+  
+  selectedFiles.forEach((file, index) => {
     const fileIcon = getFileIcon(file.name);
     html += `
       <div class="form-check mb-2 p-2 border rounded">
-        <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-${index}">
-        <label class="form-check-label w-100" for="file-${index}">
+        <input class="form-check-input batch-file-checkbox" type="checkbox" value="${file.id}" id="batch-file-${index}" checked>
+        <label class="form-check-label w-100" for="batch-file-${index}">
           <div class="d-flex align-items-center">
             <i class="${fileIcon} me-2 text-primary"></i>
             <span class="text-truncate flex-grow-1" style="max-width: 300px;" title="${file.name}">${file.name}</span>
@@ -1296,15 +1319,45 @@ function generateFileSelectionList() {
   fileSelectionList.innerHTML = html;
   
   // 綁定選擇事件
-  document.querySelectorAll('.file-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', updateSelectedFiles);
+  document.querySelectorAll('.batch-file-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateBatchSelectedFiles);
   });
+  
+  // 初始化選中狀態
+  selectedFiles = selectedFileIds;
 }
 
 // 更新選中的檔案
 function updateSelectedFiles() {
   selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
   console.log('選中的檔案：', selectedFiles);
+}
+
+// 批次修改模態框的全選/取消全選
+function selectAllBatchFiles() {
+  const checkboxes = document.querySelectorAll('.batch-file-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = true;
+  });
+  updateBatchSelectedFiles();
+}
+
+function deselectAllBatchFiles() {
+  const checkboxes = document.querySelectorAll('.batch-file-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  updateBatchSelectedFiles();
+}
+
+function updateBatchSelectedFiles() {
+  selectedFiles = Array.from(document.querySelectorAll('.batch-file-checkbox:checked')).map(cb => cb.value);
+  const count = selectedFiles.length;
+  const countElement = document.getElementById('batch-selected-count');
+  if (countElement) {
+    countElement.textContent = count;
+  }
+  console.log('批次修改選中的檔案：', selectedFiles);
 }
 
 // 新增分享對象
@@ -1505,20 +1558,43 @@ function showBatchRemoveModal() {
 function generateRemoveFileSelectionList() {
   const fileSelectionList = document.getElementById('remove-file-selection-list');
   
-  // 使用當前篩選結果的檔案
-  const files = applyFiltersAndSearch(fileData.allFiles || []);
+  // 獲取在檔案列表中已選中的檔案
+  const selectedFileIds = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
   
-  if (files.length === 0) {
-    fileSelectionList.innerHTML = '<p class="text-muted text-center">沒有符合篩選條件的檔案</p>';
+  if (selectedFileIds.length === 0) {
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">請先在檔案列表中選擇要取消分享的檔案</p>';
     return;
   }
   
-  let html = '';
-  files.forEach((file, index) => {
+  // 根據選中的檔案 ID 獲取檔案資訊
+  const selectedFiles = fileData.allFiles.filter(file => selectedFileIds.includes(file.id));
+  
+  if (selectedFiles.length === 0) {
+    fileSelectionList.innerHTML = '<p class="text-muted text-center">找不到選中的檔案</p>';
+    return;
+  }
+  
+  let html = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <button class="btn btn-sm btn-outline-primary me-2" onclick="selectAllRemoveFiles()">
+          <i class="fas fa-check-square me-1"></i>全選
+        </button>
+        <button class="btn btn-sm btn-outline-secondary me-2" onclick="deselectAllRemoveFiles()">
+          <i class="fas fa-square me-1"></i>取消全選
+        </button>
+        <span class="text-muted">
+          已選擇 <span id="remove-selected-count">${selectedFiles.length}</span> 個檔案
+        </span>
+      </div>
+    </div>
+  `;
+  
+  selectedFiles.forEach((file, index) => {
     const fileIcon = getFileIcon(file.name);
     html += `
       <div class="form-check mb-2 p-2 border rounded">
-        <input class="form-check-input remove-file-checkbox" type="checkbox" value="${file.id}" id="remove-file-${index}">
+        <input class="form-check-input remove-file-checkbox" type="checkbox" value="${file.id}" id="remove-file-${index}" checked>
         <label class="form-check-label w-100" for="remove-file-${index}">
           <div class="d-flex align-items-center">
             <i class="${fileIcon} me-2 text-primary"></i>
@@ -1536,10 +1612,18 @@ function generateRemoveFileSelectionList() {
   document.querySelectorAll('.remove-file-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', updateRemoveSelectedFiles);
   });
+  
+  // 初始化選中狀態
+  removeSelectedFiles = selectedFileIds;
 }
 
 function updateRemoveSelectedFiles() {
   removeSelectedFiles = Array.from(document.querySelectorAll('.remove-file-checkbox:checked')).map(cb => cb.value);
+  const count = removeSelectedFiles.length;
+  const countElement = document.getElementById('remove-selected-count');
+  if (countElement) {
+    countElement.textContent = count;
+  }
   
   // 如果選擇了檔案，載入分享對象
   if (removeSelectedFiles.length > 0) {
@@ -1547,6 +1631,23 @@ function updateRemoveSelectedFiles() {
   } else {
     document.getElementById('remove-recipients-section').style.display = 'none';
   }
+}
+
+// 批次取消分享的全選/取消全選
+function selectAllRemoveFiles() {
+  const checkboxes = document.querySelectorAll('.remove-file-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = true;
+  });
+  updateRemoveSelectedFiles();
+}
+
+function deselectAllRemoveFiles() {
+  const checkboxes = document.querySelectorAll('.remove-file-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  updateRemoveSelectedFiles();
 }
 
 async function loadRemoveRecipients() {
