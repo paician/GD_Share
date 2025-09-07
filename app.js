@@ -528,6 +528,11 @@ function updateAdditionalStats(totalFiles, totalSizeMB) {
 // 更新最近活動
 function updateRecentActivity() {
   const recentActivity = document.getElementById('recent-activity');
+  if (!recentActivity) {
+    console.log("recent-activity 元素不存在，跳過更新");
+    return;
+  }
+  
   if (fileData.allFiles.length === 0) {
     recentActivity.innerHTML = '<p class="text-muted">請先載入檔案以查看最近活動</p>';
     return;
@@ -543,7 +548,7 @@ function updateRecentActivity() {
     const date = new Date(file.createdTime).toLocaleString();
     activityHTML += `
       <tr>
-        <td><i class="tim-icons icon-paper text-info"></i></td>
+        <td><i class="fas fa-file text-info"></i></td>
         <td>${file.name}</td>
         <td class="text-right"><small class="text-muted">${date}</small></td>
       </tr>
@@ -556,8 +561,14 @@ function updateRecentActivity() {
 
 // 更新統計頁面
 function updateStatistics() {
+  const detailedStats = document.getElementById('detailed-stats');
+  if (!detailedStats) {
+    console.log("detailed-stats 元素不存在，跳過統計更新");
+    return;
+  }
+  
   if (fileData.allFiles.length === 0) {
-    document.getElementById('detailed-stats').innerHTML = '<p class="text-muted">請先載入檔案以查看統計資訊</p>';
+    detailedStats.innerHTML = '<p class="text-muted">請先載入檔案以查看統計資訊</p>';
     return;
   }
   
@@ -654,6 +665,10 @@ function createShareTrendChart() {
 // 更新詳細統計
 function updateDetailedStats() {
   const stats = document.getElementById('detailed-stats');
+  if (!stats) {
+    console.log("detailed-stats 元素不存在，跳過詳細統計更新");
+    return;
+  }
   
   const totalSize = fileData.allFiles.reduce((sum, file) => sum + (parseInt(file.size) || 0), 0);
   const avgSize = totalSize / fileData.allFiles.length;
