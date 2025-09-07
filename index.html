@@ -568,6 +568,19 @@
           </div>
         </div>
 
+        <!-- 最近活動區域 -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">最近活動</div>
+            <div class="chart-description">顯示最近分享的檔案</div>
+          </div>
+          <div class="p-4">
+            <div id="recent-activity">
+              <p class="text-muted">請先登入以查看最近活動</p>
+            </div>
+          </div>
+        </div>
+
         <!-- 數據載入提示 -->
         <div class="d-flex justify-content-between align-items-center mb-4">
           <div id="debug-panel" class="text-muted" style="display: none;">
@@ -623,13 +636,37 @@
 
       <!-- 其他頁面 -->
       <div id="statistics-page" class="page-content" style="display: none;">
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">檔案類型分佈</div>
+              <div class="chart-description">不同檔案類型的數量分佈</div>
+            </div>
+            <div class="chart-container">
+              <canvas id="fileTypeChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">分享趨勢</div>
+              <div class="chart-description">檔案分享的時間趨勢</div>
+            </div>
+            <div class="chart-container">
+              <canvas id="shareTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
         <div class="chart-card">
           <div class="chart-header">
-            <div class="chart-title">統計分析</div>
-            <div class="chart-description">查看詳細的數據分析和圖表</div>
+            <div class="chart-title">詳細統計</div>
+            <div class="chart-description">檔案數據的詳細分析</div>
           </div>
           <div class="p-4">
-            <p class="text-muted">統計功能開發中...</p>
+            <div id="detailed-stats">
+              <p class="text-muted">請先載入檔案以查看統計資訊</p>
+            </div>
           </div>
         </div>
       </div>
