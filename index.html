@@ -669,18 +669,18 @@
             <div class="row mb-3">
               <div class="col-md-4">
                 <label class="form-label">選擇 Google 帳號</label>
-                <select id="account-selector" class="form-select" onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                <select id="account-selector" class="form-select" onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                   <option value="">請選擇要查詢的帳號...</option>
                 </select>
               </div>
               <div class="col-md-4">
                 <label class="form-label">選擇要查詢的分享類型</label>
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mode" value="sharedWithMe" id="sharedWithMe" checked onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                  <input class="form-check-input" type="radio" name="mode" value="sharedWithMe" id="sharedWithMe" checked onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                   <label class="form-check-label" for="sharedWithMe">別人分享給我</label>
                 </div>
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="mode" value="sharedByMe" id="sharedByMe" onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                  <input class="form-check-input" type="radio" name="mode" value="sharedByMe" id="sharedByMe" onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                   <label class="form-check-label" for="sharedByMe">我分享給別人</label>
                 </div>
               </div>
@@ -698,7 +698,7 @@
             <div class="row mb-3">
               <div class="col-md-4">
                 <label class="form-label">時間範圍</label>
-                <select id="time-range" class="form-select" onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                <select id="time-range" class="form-select" onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                   <option value="all">全部時間</option>
                   <option value="today">今天</option>
                   <option value="week">本週</option>
@@ -708,7 +708,7 @@
               </div>
                <div class="col-md-4">
                  <label class="form-label">檔案類型</label>
-                 <select id="file-type" class="form-select" onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                 <select id="file-type" class="form-select" onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                    <option value="all">全部類型</option>
                    <option value="pdf">PDF</option>
                    <option value="doc">Word</option>
@@ -721,7 +721,7 @@
                </div>
                <div class="col-md-4">
                 <label class="form-label">分享權限</label>
-                <select id="share-permission" class="form-select" onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                <select id="share-permission" class="form-select" onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                   <option value="all">全部權限</option>
                   <option value="reader">僅檢視者</option>
                   <option value="writer">編輯者</option>
@@ -731,7 +731,7 @@
                </div>
               <div class="col-md-4">
                 <label class="form-label">排序方式</label>
-                <select id="sort-by" class="form-select" onchange="applyFiltersAndSearch(fileData.allFiles || [])">
+                <select id="sort-by" class="form-select" onchange="filterAndDisplayFiles(fileData.allFiles || [])">
                   <option value="name">檔案名稱</option>
                   <option value="date">建立時間</option>
                   <option value="size">檔案大小</option>
@@ -1080,6 +1080,6 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js?v=20250108w"></script>
+  <script src="app.js?v=20250108x"></script>
 </body>
 </html>

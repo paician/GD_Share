@@ -553,7 +553,7 @@ async function loadAndDisplayFiles() {
     // 檢查是否有已載入的檔案數據
     if (fileData.allFiles && fileData.allFiles.length > 0) {
       // 如果已有數據，直接應用篩選和顯示
-      applyFiltersAndSearch(fileData.allFiles);
+      filterAndDisplayFiles(fileData.allFiles);
       return;
     }
     
@@ -580,7 +580,7 @@ async function loadAndDisplayFiles() {
     
     // 載入完成後顯示檔案
     if (fileData.allFiles && fileData.allFiles.length > 0) {
-      applyFiltersAndSearch(fileData.allFiles);
+      filterAndDisplayFiles(fileData.allFiles);
     }
     
   } catch (error) {
@@ -1122,9 +1122,13 @@ function applyFiltersAndSearch(files) {
     }
   });
   
-  // 自動顯示篩選後的檔案
+  return filteredFiles;
+}
+
+// 篩選並顯示檔案
+function filterAndDisplayFiles(files) {
+  const filteredFiles = applyFiltersAndSearch(files);
   displayFiles(filteredFiles);
-  
   return filteredFiles;
 }
 
@@ -1207,8 +1211,8 @@ window.clearSearch = function() {
 
 // 顯示檔案列表
 function displayFiles(files) {
-  const filteredFiles = applyFiltersAndSearch(files);
-  document.getElementById('file-count').textContent = filteredFiles.length;
+  // 直接使用傳入的檔案，不再調用 applyFiltersAndSearch 避免無限遞歸
+  document.getElementById('file-count').textContent = files.length;
   
   const fileList = document.getElementById('file-list');
   fileList.innerHTML = "<ul class='list-group'></ul>";
