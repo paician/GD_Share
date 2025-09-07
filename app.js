@@ -26,7 +26,7 @@ function initializeCredentials() {
   }
 }
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive";
+const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.activity.readonly";
 
 let tokenClient;
 let gapiInited = false;
@@ -1774,9 +1774,15 @@ async function loadFileAccessStats() {
   } catch (error) {
     console.error('載入存取統計失敗：', error);
     
-    // 如果 Drive Activity API 不可用，使用備用方法
-    if (error.message.includes('Drive Activity API 未載入')) {
+    // 檢查錯誤類型並使用備用方法
+    const errorMessage = error.message || error.toString();
+    const isApiNotLoaded = errorMessage.includes('Drive Activity API 未載入');
+    const isPermissionError = errorMessage.includes('403') || errorMessage.includes('Forbidden');
+    const isApiError = error.status === 403 || error.status === 401;
+    
+    if (isApiNotLoaded || isPermissionError || isApiError) {
       try {
+        console.log('使用備用存取統計方法');
         await loadAlternativeAccessStats(fileId, timeRange, content);
         return;
       } catch (altError) {
@@ -1787,10 +1793,31 @@ async function loadFileAccessStats() {
     content.innerHTML = `
       <div class="alert alert-danger">
         <i class="fas fa-exclamation-triangle me-2"></i>
-        載入存取統計失敗：${error.message}
-        <br><small class="text-muted">存取統計功能需要 Google Drive Activity API 支援</small>
+        載入存取統計失敗：${errorMessage}
+        <br><small class="text-muted">正在嘗試使用備用統計方法...</small>
       </div>
     `;
+    
+    // 最後嘗試備用方法
+    try {
+      await loadAlternativeAccessStats(fileId, timeRange, content);
+    } catch (finalError) {
+      console.error('所有統計方法都失敗：', finalError);
+      
+      // 最後的簡單備用方法
+      try {
+        await loadSimpleAccessStats(fileId, content);
+      } catch (simpleError) {
+        console.error('簡單備用方法也失敗：', simpleError);
+        content.innerHTML = `
+          <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            無法載入存取統計：${finalError.message}
+            <br><small class="text-muted">請檢查檔案權限或稍後再試</small>
+          </div>
+        `;
+      }
+    }
   }
 }
 
@@ -1804,22 +1831,23 @@ function getDateFilter(days) {
 async function loadAlternativeAccessStats(fileId, timeRange, content) {
   console.log('使用備用存取統計方法');
   
-  // 獲取檔案詳細資訊
-  const fileResponse = await gapi.client.drive.files.get({
-    fileId: fileId,
-    fields: 'id,name,createdTime,modifiedTime,permissions,owners'
-  });
-  
-  const file = fileResponse.result;
-  
-  // 獲取分享權限資訊
-  const permissionsResponse = await gapi.client.drive.permissions.list({
-    fileId: fileId,
-    fields: 'permissions(id,type,role,emailAddress,displayName)'
-  });
-  
-  const permissions = permissionsResponse.result.permissions || [];
-  const shareCount = permissions.filter(p => p.role !== 'owner').length;
+  try {
+    // 獲取檔案詳細資訊
+    const fileResponse = await gapi.client.drive.files.get({
+      fileId: fileId,
+      fields: 'id,name,createdTime,modifiedTime,permissions,owners,size'
+    });
+    
+    const file = fileResponse.result;
+    
+    // 獲取分享權限資訊
+    const permissionsResponse = await gapi.client.drive.permissions.list({
+      fileId: fileId,
+      fields: 'permissions(id,type,role,emailAddress,displayName)'
+    });
+    
+    const permissions = permissionsResponse.result.permissions || [];
+    const shareCount = permissions.filter(p => p.role !== 'owner').length;
   
   // 模擬存取統計（基於分享對象數量和檔案修改時間）
   const stats = {
@@ -1855,14 +1883,68 @@ async function loadAlternativeAccessStats(fileId, timeRange, content) {
     });
   });
   
-  // 顯示備用統計結果
-  content.innerHTML = `
-    <div class="alert alert-info">
-      <i class="fas fa-info-circle me-2"></i>
-      使用備用統計方法（基於分享權限資訊）
-    </div>
-    ${generateAlternativeStatsHTML(stats, timeRange, file)}
-  `;
+    // 顯示備用統計結果
+    content.innerHTML = `
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        使用備用統計方法（基於分享權限資訊）
+      </div>
+      ${generateAlternativeStatsHTML(stats, timeRange, file)}
+    `;
+    
+  } catch (error) {
+    console.error('備用統計方法失敗：', error);
+    throw error;
+  }
+}
+
+// 簡單的備用統計方法（最基本的資訊）
+async function loadSimpleAccessStats(fileId, content) {
+  console.log('使用簡單備用統計方法');
+  
+  try {
+    // 只獲取基本的檔案資訊
+    const fileResponse = await gapi.client.drive.files.get({
+      fileId: fileId,
+      fields: 'id,name,createdTime,modifiedTime'
+    });
+    
+    const file = fileResponse.result;
+    
+    content.innerHTML = `
+      <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        使用基本統計資訊（無法獲取詳細分享資訊）
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title text-primary">基本資訊</h5>
+              <p class="card-text">檔案：${file.name}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title text-info">時間資訊</h5>
+              <p class="card-text">建立：${file.createdTime ? new Date(file.createdTime).toLocaleDateString() : '未知'}</p>
+              <p class="card-text">修改：${file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString() : '未知'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle me-2"></i>
+        如需詳細的存取統計，請確保已啟用 Drive Activity API 並重新授權應用程式
+      </div>
+    `;
+    
+  } catch (error) {
+    console.error('簡單備用方法失敗：', error);
+    throw error;
+  }
 }
 
 function generateAlternativeStatsHTML(stats, timeRange, file) {
