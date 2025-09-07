@@ -401,6 +401,11 @@ window.showPage = function(pageName) {
     updateStatistics();
   } else if (pageName === 'profile') {
     updateProfile();
+  } else if (pageName === 'files') {
+    // 檔案頁面：自動應用當前篩選條件並顯示檔案
+    if (fileData.allFiles && fileData.allFiles.length > 0) {
+      applyFiltersAndSearch(fileData.allFiles);
+    }
   }
 }
 
@@ -1507,6 +1512,34 @@ async function addFilePermission(fileId, email, role) {
       role: role,
       type: 'user',
       emailAddress: email
+    }
+  });
+}
+
+// 快速權限篩選函數
+function quickFilterPermission(permissionType) {
+  // 更新下拉選單
+  const sharePermissionSelect = document.getElementById('share-permission');
+  if (sharePermissionSelect) {
+    sharePermissionSelect.value = permissionType;
+  }
+  
+  // 更新按鈕狀態
+  updateQuickFilterButtons(permissionType);
+  
+  // 應用篩選
+  if (fileData.allFiles && fileData.allFiles.length > 0) {
+    applyFiltersAndSearch(fileData.allFiles);
+  }
+}
+
+// 更新快速篩選按鈕狀態
+function updateQuickFilterButtons(activeType) {
+  const buttons = document.querySelectorAll('.btn-group button');
+  buttons.forEach(button => {
+    button.classList.remove('active');
+    if (button.onclick && button.onclick.toString().includes(`'${activeType}'`)) {
+      button.classList.add('active');
     }
   });
 }
@@ -2738,16 +2771,47 @@ async function switchAccount(accountId) {
   await loadAllDataAndUpdateDashboard();
 }
 
+// 自定義確認對話框
+function showConfirmDialog(message, callback) {
+  const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+  document.getElementById('confirmMessage').textContent = message;
+  
+  // 清除之前的事件監聽器
+  const okButton = document.getElementById('confirmOk');
+  const cancelButton = document.getElementById('confirmCancel');
+  
+  // 移除舊的事件監聽器
+  okButton.replaceWith(okButton.cloneNode(true));
+  cancelButton.replaceWith(cancelButton.cloneNode(true));
+  
+  // 重新獲取元素
+  const newOkButton = document.getElementById('confirmOk');
+  const newCancelButton = document.getElementById('confirmCancel');
+  
+  newOkButton.onclick = () => {
+    modal.hide();
+    callback(true);
+  };
+  
+  newCancelButton.onclick = () => {
+    modal.hide();
+    callback(false);
+  };
+  
+  modal.show();
+}
+
 // 移除帳號 - 全局函數
 window.removeAccount = function(accountId) {
-  if (confirm('確定要移除這個帳號嗎？')) {
-    authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
-    
-    if (currentAccount?.id === accountId) {
-      currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
-    }
-    
-    saveAuthorizedAccounts();
+  showConfirmDialog('確定要移除這個帳號嗎？', (confirmed) => {
+    if (confirmed) {
+      authorizedAccounts = authorizedAccounts.filter(acc => acc.id !== accountId);
+      
+      if (currentAccount?.id === accountId) {
+        currentAccount = authorizedAccounts.length > 0 ? authorizedAccounts[0] : null;
+      }
+      
+      saveAuthorizedAccounts();
     updateAuthorizedAccountsDisplay();
     
     if (currentAccount) {
