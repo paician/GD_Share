@@ -1496,6 +1496,47 @@ function isMobileDevice() {
   return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+// 檢測手機解析度並應用相應優化
+function detectMobileResolution() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  
+  // 添加解析度相關的CSS類
+  document.body.classList.remove('mobile-small', 'mobile-medium', 'mobile-large');
+  
+  if (width <= 360) {
+    document.body.classList.add('mobile-small');
+  } else if (width <= 480) {
+    document.body.classList.add('mobile-medium');
+  } else if (width <= 768) {
+    document.body.classList.add('mobile-large');
+  }
+  
+  // 調整字體大小以適應不同解析度
+  const root = document.documentElement;
+  if (width <= 360) {
+    root.style.fontSize = '14px';
+  } else if (width <= 480) {
+    root.style.fontSize = '15px';
+  } else if (width <= 768) {
+    root.style.fontSize = '16px';
+  } else {
+    root.style.fontSize = '16px';
+  }
+  
+  console.log(`手機解析度檢測: ${width}x${height}, 設備類型: ${isMobileDevice() ? '手機' : '桌面'}`);
+}
+
+// 處理視窗大小變化
+function handleResize() {
+  detectMobileResolution();
+  
+  // 如果視窗變大，關閉手機選單
+  if (window.innerWidth > 768) {
+    closeMobileMenu();
+  }
+}
+
 // 手機版檔案列表載入優化
 function loadFilesMobileOptimized() {
   if (isMobileDevice()) {
@@ -3409,6 +3450,12 @@ function updateDebugInfo() {
 // 初始化 Google API 和身份驗證
 window.onload = () => {
     console.log("🚀 DashboardKit 初始化開始 - 版本 20250108h (個人版)");
+    
+    // 檢測手機解析度
+    detectMobileResolution();
+    
+    // 添加視窗大小變化監聽器
+    window.addEventListener('resize', handleResize);
     
     // 首先初始化憑證
     if (!initializeCredentials()) {

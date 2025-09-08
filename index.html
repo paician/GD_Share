@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1" />
   <title>Dashboard - 現代化儀表板</title>
   <meta name="description" content="Google Drive 檔案分享管理工具 - 支援手機H5操作" />
   <meta name="theme-color" content="#6366f1" />
@@ -299,6 +299,9 @@
     color: var(--sidebar-text);
     z-index: 1001;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   .mobile-navbar-content {
@@ -337,14 +340,27 @@
 
   /* 手機版響應式設計 */
   @media (max-width: 768px) {
+    html {
+      font-size: 16px; /* 確保基礎字體大小 */
+    }
+    
+    body {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
     .dashboard-container {
       flex-direction: column;
       padding-top: 60px; /* 為手機版導航欄留出空間 */
+      min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
     }
     
     .sidebar {
-      width: 100%;
-      height: auto;
+      width: 100vw;
+      max-width: 100vw;
+      height: calc(100vh - 60px);
       position: fixed;
       top: 60px;
       left: 0;
@@ -353,6 +369,8 @@
       z-index: 1000;
       border-radius: 0;
       margin-bottom: 0;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
 
     .sidebar.mobile-open {
@@ -385,6 +403,10 @@
     .main-content {
       margin-left: 0;
       padding: 16px;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
     
     .page-header {
@@ -532,6 +554,71 @@
     * {
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
+      box-sizing: border-box;
+    }
+    
+    /* 手機版解析度優化 */
+    @media (max-width: 480px) {
+      .mobile-navbar-content {
+        padding: 0 12px;
+      }
+      
+      .mobile-logo {
+        font-size: 16px;
+      }
+      
+      .main-content {
+        padding: 12px;
+      }
+      
+      .file-card {
+        padding: 12px;
+        margin-bottom: 8px;
+      }
+      
+      .file-card-title {
+        font-size: 14px;
+      }
+      
+      .btn {
+        min-height: 40px;
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+      
+      .btn-sm {
+        min-height: 32px;
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+    }
+    
+    @media (max-width: 360px) {
+      .mobile-navbar-content {
+        padding: 0 8px;
+      }
+      
+      .main-content {
+        padding: 8px;
+      }
+      
+      .file-card {
+        padding: 8px;
+      }
+      
+      .file-card-body {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      
+      .file-card-actions {
+        flex-direction: column;
+        gap: 6px;
+      }
+      
+      .file-card-actions .btn {
+        width: 100%;
+      }
     }
     
     /* 減少手機版動畫以提升性能 */
@@ -617,6 +704,57 @@
     .error-mobile .error-details {
       font-size: 14px;
       opacity: 0.7;
+    }
+    
+    /* 手機版解析度特定優化 */
+    .mobile-small .file-card-title {
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    
+    .mobile-small .file-card-body {
+      font-size: 12px;
+    }
+    
+    .mobile-small .btn {
+      font-size: 12px;
+      padding: 8px 12px;
+    }
+    
+    .mobile-medium .file-card-title {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    
+    .mobile-medium .file-card-body {
+      font-size: 13px;
+    }
+    
+    .mobile-large .file-card-title {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    
+    .mobile-large .file-card-body {
+      font-size: 14px;
+    }
+    
+    /* 防止水平滾動 */
+    .dashboard-container,
+    .main-content,
+    .sidebar,
+    .mobile-navbar {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+    
+    /* 確保文字不會溢出 */
+    .file-card-title,
+    .nav-text,
+    .mobile-logo span {
+      word-break: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
     }
     
     /* 手機版模態框優化 */
@@ -744,6 +882,11 @@
       padding: 16px;
       margin-bottom: 12px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     
     .file-card-header {
