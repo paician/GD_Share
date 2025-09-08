@@ -2,8 +2,14 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>Dashboard - 現代化儀表板</title>
+  <meta name="description" content="Google Drive 檔案分享管理工具 - 支援手機H5操作" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Dashboard" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
   <!-- User-Agent 檢查 -->
   <script>
     // 簡單的 User-Agent 檢查
@@ -282,10 +288,98 @@
     position: relative;
   }
 
-  /* 響應式設計 */
+  /* 手機版導航欄 */
+  .mobile-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    z-index: 1001;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-navbar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 16px;
+  }
+
+  .mobile-menu-toggle {
+    background: none;
+    border: none;
+    color: var(--sidebar-text);
+    font-size: 20px;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  .mobile-menu-toggle:hover {
+    background: var(--sidebar-hover);
+  }
+
+  .mobile-logo {
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .mobile-user-info {
+    font-size: 24px;
+    opacity: 0.8;
+  }
+
+  /* 手機版響應式設計 */
   @media (max-width: 768px) {
+    .dashboard-container {
+      flex-direction: column;
+      padding-top: 60px; /* 為手機版導航欄留出空間 */
+    }
+    
     .sidebar {
+      width: 100%;
+      height: auto;
+      position: fixed;
+      top: 60px;
+      left: 0;
       transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+
+    .sidebar.mobile-open {
+      transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: none;
+    }
+
+    .sidebar-overlay.show {
+      display: block;
+    }
+    
+    .sidebar-header {
+      padding: 16px 20px;
+    }
+    
+    .nav-section {
+      padding: 12px 0;
     }
     
     .main-content {
@@ -293,12 +387,429 @@
       padding: 16px;
     }
     
+    .page-header {
+      margin-bottom: 24px;
+    }
+    
+    .page-title {
+      font-size: 24px;
+    }
+    
     .stats-grid {
       grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    .stat-card {
+      padding: 16px;
+    }
+    
+    .stat-value {
+      font-size: 24px;
     }
     
     .charts-grid {
       grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    .chart-card {
+      padding: 16px;
+    }
+    
+    .chart-container {
+      height: 180px;
+    }
+    
+    /* 手機版按鈕優化 */
+    .btn {
+      min-height: 44px;
+      font-size: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .btn-sm {
+      min-height: 36px;
+      font-size: 14px;
+      padding: 8px 12px;
+    }
+    
+    .btn:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+    
+    /* 手機版表單優化 */
+    .form-control, .form-select {
+      min-height: 44px;
+      font-size: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    
+    /* 手機版勾選框優化 */
+    .form-check-input {
+      width: 20px;
+      height: 20px;
+      margin-top: 0;
+    }
+    
+    .form-check-label {
+      font-size: 16px;
+      padding-left: 8px;
+    }
+    
+    /* 手機版卡片觸控優化 */
+    .file-card {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    
+    .file-card:active {
+      transform: scale(0.98);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 手機版導航項目觸控優化 */
+    .nav-link {
+      min-height: 48px;
+      padding: 12px 16px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .nav-link:active {
+      background: var(--sidebar-hover);
+    }
+    
+    /* 手機版模態框觸控優化 */
+    .modal-dialog {
+      margin: 16px;
+      max-width: calc(100% - 32px);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+    
+    .modal-content {
+      border-radius: 12px;
+      touch-action: manipulation;
+    }
+    
+    /* 手機版滑動優化 */
+    .file-list-mobile {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 手機版文字選擇優化 */
+    .file-card-title {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+    
+    /* 手機版間距優化 */
+    .mb-3 {
+      margin-bottom: 16px !important;
+    }
+    
+    .mt-3 {
+      margin-top: 16px !important;
+    }
+    
+    .p-4 {
+      padding: 16px !important;
+    }
+    
+    /* 手機版性能優化 */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    
+    /* 減少手機版動畫以提升性能 */
+    @media (max-width: 768px) {
+      * {
+        animation-duration: 0.2s !important;
+        transition-duration: 0.2s !important;
+      }
+      
+      .file-card {
+        will-change: transform;
+      }
+      
+      .btn:active {
+        transition: transform 0.1s ease;
+      }
+      
+      /* 優化滾動性能 */
+      .sidebar,
+      .main-content,
+      .modal-body,
+      .file-list-mobile {
+        -webkit-overflow-scrolling: touch;
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+      }
+      
+      /* 減少重繪 */
+      .file-card-header,
+      .file-card-body,
+      .file-card-actions {
+        contain: layout style;
+      }
+    }
+    
+    /* 手機版載入優化 */
+    .loading-mobile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    
+    .loading-mobile .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top: 3px solid var(--purple-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* 手機版錯誤狀態優化 */
+    .error-mobile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    
+    .error-mobile .error-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .error-mobile .error-message {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    
+    .error-mobile .error-details {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+    
+    /* 手機版模態框優化 */
+    .modal-dialog {
+      margin: 16px;
+      max-width: calc(100% - 32px);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+    
+    .modal-content {
+      border-radius: 12px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .modal-body {
+      padding: 16px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+    
+    .modal-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .modal-footer .btn {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    /* 手機版批次編輯模態框優化 */
+    #batchEditModal .modal-dialog,
+    #batchRemoveModal .modal-dialog {
+      margin: 8px;
+      max-width: calc(100% - 16px);
+    }
+    
+    #batchEditModal .modal-body,
+    #batchRemoveModal .modal-body {
+      max-height: calc(100vh - 100px);
+    }
+    
+    /* 手機版存取統計模態框優化 */
+    #accessStatsModal .modal-dialog {
+      margin: 8px;
+      max-width: calc(100% - 16px);
+    }
+    
+    #accessStatsModal .modal-body {
+      max-height: calc(100vh - 100px);
+    }
+    
+    /* 手機版確認模態框優化 */
+    #confirmModal .modal-dialog {
+      margin: 32px 16px;
+      max-width: calc(100% - 32px);
+    }
+    
+    /* 手機版檔案選擇列表優化 */
+    .file-selection-list {
+      max-height: 200px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .file-selection-item {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .file-selection-item:last-child {
+      border-bottom: none;
+    }
+    
+    .file-selection-checkbox {
+      flex-shrink: 0;
+    }
+    
+    .file-selection-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .file-selection-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    
+    .file-selection-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    /* 手機版表格優化 - 使用卡片式布局 */
+    .mobile-card-view {
+      display: block;
+    }
+    
+    .mobile-card-view .table {
+      display: none;
+    }
+    
+    .file-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .file-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .file-card-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 16px;
+      margin: 0;
+      flex: 1;
+      margin-right: 12px;
+    }
+    
+    .file-card-checkbox {
+      margin-right: 12px;
+    }
+    
+    .file-card-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .file-card-info {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .file-card-info strong {
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    
+    .file-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .file-card-actions .btn {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    /* 手機版隱藏桌面表格 */
+    .desktop-table-view {
+      display: none;
+    }
+  }
+  
+  /* 桌面版隱藏手機卡片 */
+  @media (min-width: 769px) {
+    .mobile-card-view {
+      display: none;
+    }
+    
+    .desktop-table-view {
+      display: block;
     }
   }
 
@@ -432,8 +943,27 @@
 </head>
 <body>
   <div class="dashboard-container">
+    <!-- 手機版頂部導航欄 -->
+    <nav class="mobile-navbar d-md-none">
+      <div class="mobile-navbar-content">
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="mobile-logo">
+          <i class="fas fa-chart-line me-2"></i>
+          <span>Dashboard</span>
+        </div>
+        <div class="mobile-user-info" id="mobile-user-info">
+          <i class="fas fa-user-circle"></i>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 側邊欄遮罩層 -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
+
     <!-- 側邊欄 -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo">
           <div class="logo-icon">
@@ -446,7 +976,7 @@
       <div class="nav-section">
         <div class="nav-title">資訊表</div>
         <div class="nav-item active" data-page="dashboard">
-          <a href="#" class="nav-link" onclick="showPage('dashboard')">
+          <a href="#" class="nav-link" onclick="showPageMobile('dashboard')">
             <i class="fas fa-home"></i>
             <span class="nav-text">首頁</span>
           </a>
@@ -456,28 +986,28 @@
       <div class="nav-section">
         <div class="nav-title">功能整合</div>
         <div class="nav-item" data-page="files">
-          <a href="#" class="nav-link" onclick="showPage('files')">
+          <a href="#" class="nav-link" onclick="showPageMobile('files')">
             <i class="fas fa-users"></i>
             <span class="nav-text">檔案分享狀態</span>
             <i class="fas fa-chevron-right nav-arrow"></i>
           </a>
         </div>
         <div class="nav-item" data-page="statistics">
-          <a href="#" class="nav-link" onclick="showPage('statistics')">
+          <a href="#" class="nav-link" onclick="showPageMobile('statistics')">
             <i class="fas fa-users"></i>
             <span class="nav-text">檔案類型分佈</span>
             <i class="fas fa-chevron-right nav-arrow"></i>
           </a>
         </div>
         <div class="nav-item" data-page="settings">
-          <a href="#" class="nav-link" onclick="showPage('settings')">
+          <a href="#" class="nav-link" onclick="showPageMobile('settings')">
             <i class="fas fa-users"></i>
             <span class="nav-text">使用說明</span>
             <i class="fas fa-chevron-right nav-arrow"></i>
           </a>
         </div>
         <div class="nav-item" data-page="profile">
-          <a href="#" class="nav-link" onclick="showPage('profile')">
+          <a href="#" class="nav-link" onclick="showPageMobile('profile')">
             <i class="fas fa-globe"></i>
             <span class="nav-text">個人資料</span>
             <i class="fas fa-chevron-right nav-arrow"></i>
@@ -776,7 +1306,11 @@
                </div>
              </div>
             
-            <div id="file-list" class="mt-4"></div>
+            <!-- 桌面版表格視圖 -->
+            <div id="file-list" class="mt-4 desktop-table-view"></div>
+            
+            <!-- 手機版卡片視圖 -->
+            <div id="file-list-mobile" class="mt-4 mobile-card-view"></div>
           </div>
         </div>
       </div>

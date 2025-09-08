@@ -275,13 +275,23 @@ signoutButton.onclick = () => {
 if (loadFilesButton) {
 loadFilesButton.onclick = async () => {
   const mode = document.querySelector('input[name="mode"]:checked').value;
-  fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
+  
+  // 手機版優化載入狀態
+  if (isMobileDevice()) {
+    showMobileLoading('file-list-mobile', '正在載入分享檔案...');
+  } else {
+    fileList.innerHTML = "<p class='loading'>正在載入分享檔案...</p>";
+  }
 
   try {
     // 檢查是否已登入
     const token = gapi.client.getToken();
     if (!token || !token.access_token) {
-      fileList.innerHTML = "<p>⚠️ 請先登入 Google 帳戶</p>";
+      if (isMobileDevice()) {
+        showMobileError('file-list-mobile', '請先登入 Google 帳戶', '點擊右上角新增帳號按鈕進行登入');
+      } else {
+        fileList.innerHTML = "<p>⚠️ 請先登入 Google 帳戶</p>";
+      }
       return;
     }
 
@@ -1214,17 +1224,35 @@ function displayFiles(files) {
   // 直接使用傳入的檔案，不再調用 applyFiltersAndSearch 避免無限遞歸
   document.getElementById('file-count').textContent = files.length;
   
+  // 渲染桌面版表格視圖
+  displayFilesDesktop(files);
+  
+  // 渲染手機版卡片視圖
+  displayFilesMobile(files);
+
+  // 顯示檔案列表操作欄
+  const fileListActions = document.getElementById('file-list-actions');
+  if (fileListActions) {
+    fileListActions.style.display = 'flex';
+  }
+  
+  // 更新選中計數
+  updateSelectedCount();
+}
+
+// 桌面版表格視圖
+function displayFilesDesktop(files) {
   const fileList = document.getElementById('file-list');
   fileList.innerHTML = "<ul class='list-group'></ul>";
-    const ul = fileList.querySelector("ul");
+  const ul = fileList.querySelector("ul");
 
   files.forEach((file) => {
-      const li = document.createElement("li");
+    const li = document.createElement("li");
     li.className = "list-group-item";
     
     const fileIcon = getFileIcon(file.name);
     
-      li.innerHTML = `
+    li.innerHTML = `
       <div class="d-flex align-items-center">
         <!-- 勾選框 - 移到最左邊更醒目 -->
         <div class="form-check me-3">
@@ -1288,20 +1316,92 @@ function displayFiles(files) {
         </div>
       </div>
       `;
-      ul.appendChild(li);
-    });
-
-  // 顯示檔案列表操作欄
-  const fileListActions = document.getElementById('file-list-actions');
-  if (fileListActions) {
-    fileListActions.style.display = 'flex';
-  }
-  
-  // 更新選中計數
-  updateSelectedCount();
+    ul.appendChild(li);
+  });
 }
 
-// 切換檔案詳細資訊顯示
+// 手機版卡片視圖
+function displayFilesMobile(files) {
+  const fileListMobile = document.getElementById('file-list-mobile');
+  fileListMobile.innerHTML = '';
+
+  files.forEach((file) => {
+    const fileIcon = getFileIcon(file.name);
+    const fileSize = file.size ? (parseInt(file.size) / 1024 / 1024).toFixed(2) + ' MB' : '0 MB';
+    
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    card.innerHTML = `
+      <div class="file-card-header">
+        <div class="form-check file-card-checkbox">
+          <input class="form-check-input file-checkbox" type="checkbox" value="${file.id}" id="file-checkbox-mobile-${file.id}" onchange="updateSelectedCount()">
+          <label class="form-check-label" for="file-checkbox-mobile-${file.id}"></label>
+        </div>
+        <h6 class="file-card-title">${file.name}</h6>
+        <span class="badge bg-primary rounded-pill">${file.mimeType ? file.mimeType.split('/')[1] : 'file'}</span>
+      </div>
+      
+      <div class="file-card-body">
+        <div class="file-card-info">
+          <strong><i class="${fileIcon} me-1"></i>檔案類型</strong>
+          ${file.mimeType ? file.mimeType.split('/')[1].toUpperCase() : '未知'}
+        </div>
+        <div class="file-card-info">
+          <strong><i class="fas fa-hdd me-1"></i>檔案大小</strong>
+          ${fileSize}
+        </div>
+        <div class="file-card-info">
+          <strong><i class="fas fa-calendar me-1"></i>建立時間</strong>
+          ${new Date(file.createdTime).toLocaleDateString()}
+        </div>
+        <div class="file-card-info">
+          <strong><i class="fas fa-share-alt me-1"></i>分享狀態</strong>
+          ${getShareStatus(file)}
+        </div>
+      </div>
+      
+      <div class="file-card-actions">
+        <a href="${file.webViewLink}" target="_blank" class="btn btn-primary btn-sm">
+          <i class="fas fa-external-link-alt me-1"></i>開啟
+        </a>
+        <button class="btn btn-outline-info btn-sm" onclick="toggleFileDetailsMobile('${file.id}')">
+          <i class="fas fa-info-circle me-1"></i>詳細
+        </button>
+        <button class="btn btn-outline-warning btn-sm" onclick="editFilePermissions('${file.id}')">
+          <i class="fas fa-edit me-1"></i>權限
+        </button>
+      </div>
+      
+      <div class="file-details-content mt-3" id="details-mobile-${file.id}" style="display: none;">
+        <div class="row">
+          <div class="col-12">
+            <h6><i class="fas fa-info-circle text-primary me-2"></i>檔案資訊</h6>
+            <ul class="list-unstyled">
+              <li><strong>檔案名稱：</strong>${file.name}</li>
+              <li><strong>檔案大小：</strong>${fileSize}</li>
+              <li><strong>建立時間：</strong>${new Date(file.createdTime).toLocaleString()}</li>
+              <li><strong>修改時間：</strong>${new Date(file.modifiedTime).toLocaleString()}</li>
+              <li><strong>檔案類型：</strong>${file.mimeType || '未知'}</li>
+              <li><strong>檔案 ID：</strong><code>${file.id}</code></li>
+            </ul>
+          </div>
+          <div class="col-12">
+            <h6><i class="fas fa-share-alt text-success me-2"></i>分享資訊</h6>
+            <div id="share-info-mobile-${file.id}">
+              <div class="text-center">
+                <i class="fas fa-spinner fa-spin"></i> 載入分享資訊中...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    fileListMobile.appendChild(card);
+  });
+}
+
+// 切換檔案詳細資訊顯示（桌面版）
 function toggleFileDetails(fileId) {
   const detailsDiv = document.getElementById(`details-${fileId}`);
   const chevronIcon = document.getElementById(`chevron-${fileId}`);
@@ -1316,6 +1416,97 @@ function toggleFileDetails(fileId) {
     detailsDiv.style.display = 'none';
     chevronIcon.className = 'fas fa-chevron-down';
   }
+}
+
+// 切換檔案詳細資訊顯示（手機版）
+function toggleFileDetailsMobile(fileId) {
+  const detailsDiv = document.getElementById(`details-mobile-${fileId}`);
+  
+  if (detailsDiv.style.display === 'none') {
+    detailsDiv.style.display = 'block';
+    
+    // 載入分享資訊
+    loadFileShareInfoMobile(fileId);
+  } else {
+    detailsDiv.style.display = 'none';
+  }
+}
+
+// 手機版選單切換
+function toggleMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  
+  sidebar.classList.toggle('mobile-open');
+  overlay.classList.toggle('show');
+  
+  // 防止背景滾動
+  if (sidebar.classList.contains('mobile-open')) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+}
+
+// 關閉手機版選單
+function closeMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  
+  sidebar.classList.remove('mobile-open');
+  overlay.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// 手機版頁面切換（自動關閉選單）
+function showPageMobile(pageId) {
+  showPage(pageId);
+  closeMobileMenu();
+}
+
+// 手機版載入狀態顯示
+function showMobileLoading(containerId, message = '載入中...') {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.innerHTML = `
+      <div class="loading-mobile">
+        <div class="spinner"></div>
+        <div class="loading-text">${message}</div>
+      </div>
+    `;
+  }
+}
+
+// 手機版錯誤狀態顯示
+function showMobileError(containerId, message = '載入失敗', details = '') {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.innerHTML = `
+      <div class="error-mobile">
+        <div class="error-icon">⚠️</div>
+        <div class="error-message">${message}</div>
+        ${details ? `<div class="error-details">${details}</div>` : ''}
+      </div>
+    `;
+  }
+}
+
+// 檢測是否為手機設備
+function isMobileDevice() {
+  return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// 手機版檔案列表載入優化
+function loadFilesMobileOptimized() {
+  if (isMobileDevice()) {
+    // 手機版使用簡化的載入狀態
+    showMobileLoading('file-list-mobile', '載入檔案中...');
+  }
+  
+  // 延遲載入以提升用戶體驗
+  setTimeout(() => {
+    loadAndDisplayFiles();
+  }, 100);
 }
 
 // 載入檔案分享資訊
@@ -1382,6 +1573,87 @@ async function loadFileShareInfo(fileId) {
     });
     
     shareInfoHTML += '</ul>';
+    shareInfoDiv.innerHTML = shareInfoHTML;
+    
+  } catch (error) {
+    console.error('載入分享資訊失敗：', error);
+    shareInfoDiv.innerHTML = `
+      <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        無法載入分享資訊：${error.message}
+      </div>
+    `;
+  }
+}
+
+// 載入檔案分享資訊（手機版）
+async function loadFileShareInfoMobile(fileId) {
+  const shareInfoDiv = document.getElementById(`share-info-mobile-${fileId}`);
+  
+  try {
+    // 使用 Google Drive API 獲取檔案的分享權限
+    const response = await gapi.client.drive.permissions.list({
+      fileId: fileId,
+      fields: 'permissions(id,type,role,emailAddress,displayName,photoLink)'
+    });
+    
+    const permissions = response.result.permissions || [];
+    
+    if (permissions.length === 0) {
+      shareInfoDiv.innerHTML = '<p class="text-muted">此檔案未分享給任何人</p>';
+      return;
+    }
+    
+    // 過濾掉擁有者（owner）
+    const sharedPermissions = permissions.filter(p => p.role !== 'owner');
+    
+    if (sharedPermissions.length === 0) {
+      shareInfoDiv.innerHTML = '<p class="text-muted">此檔案僅為擁有者所有</p>';
+      return;
+    }
+    
+    // 顯示分享資訊（手機版優化）
+    let shareInfoHTML = '<div class="row">';
+    
+    sharedPermissions.forEach(permission => {
+      const roleText = getRoleText(permission.role);
+      let userInfo, userEmail;
+      
+      // 處理 anyoneWithLink 特殊情況
+      if (permission.id === 'anyoneWithLink' || permission.type === 'anyone') {
+        userInfo = '知道連結的任何人';
+        userEmail = '公開分享';
+      } else {
+        userInfo = permission.displayName || permission.emailAddress || '未知用戶';
+        userEmail = permission.emailAddress || '無電子郵件';
+      }
+      
+      shareInfoHTML += `
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-body p-3">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  ${permission.photoLink ? 
+                    `<img src="${permission.photoLink}" class="rounded-circle" style="width: 32px; height: 32px;" alt="${userInfo}">` :
+                    `<i class="fas fa-user-circle text-muted" style="font-size: 32px;"></i>`
+                  }
+                </div>
+                <div class="flex-grow-1">
+                  <div class="fw-bold">${userInfo}</div>
+                  <small class="text-muted">${userEmail}</small>
+                </div>
+                <div>
+                  <span class="badge bg-${getRoleColor(permission.role)} fs-6">${roleText}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    shareInfoHTML += '</div>';
     shareInfoDiv.innerHTML = shareInfoHTML;
     
   } catch (error) {
