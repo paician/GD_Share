@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=0.5, user-scalable=yes" />
   <title>Dashboard - 現代化儀表板</title>
   <meta name="description" content="Google Drive 檔案分享管理工具 - 支援手機H5操作" />
   <meta name="theme-color" content="#6366f1" />
@@ -333,6 +333,32 @@
     font-weight: 700;
   }
 
+  .mobile-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .mobile-zoom-btn {
+    background: none;
+    border: none;
+    color: var(--sidebar-text);
+    font-size: 16px;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    opacity: 0.8;
+  }
+  
+  .mobile-zoom-btn:hover {
+    background: var(--sidebar-hover);
+    opacity: 1;
+  }
+  
+  .mobile-zoom-btn:active {
+    transform: scale(0.95);
+  }
+  
   .mobile-user-info {
     font-size: 24px;
     opacity: 0.8;
@@ -347,6 +373,94 @@
     body {
       font-size: 16px;
       line-height: 1.5;
+    }
+    
+    /* 6.2吋手機優化 (通常解析度約 1080x2340 或 1440x3200) */
+    @media (max-width: 414px) and (min-width: 360px) {
+      html {
+        font-size: 15px;
+      }
+      
+      .mobile-navbar {
+        height: 56px;
+      }
+      
+      .mobile-navbar-content {
+        padding: 0 16px;
+      }
+      
+      .main-content {
+        padding-top: 56px;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+      
+      .file-card {
+        padding: 14px;
+        margin-bottom: 10px;
+      }
+      
+      .file-card-title {
+        font-size: 15px;
+        line-height: 1.4;
+      }
+      
+      .file-card-body {
+        font-size: 13px;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      
+      .btn {
+        min-height: 42px;
+        font-size: 15px;
+        padding: 11px 15px;
+      }
+      
+      .btn-sm {
+        min-height: 34px;
+        font-size: 13px;
+        padding: 7px 11px;
+      }
+    }
+    
+    /* 大屏手機優化 (6.2吋以上) */
+    @media (min-width: 415px) and (max-width: 768px) {
+      html {
+        font-size: 16px;
+      }
+      
+      .mobile-navbar {
+        height: 64px;
+      }
+      
+      .main-content {
+        padding-top: 64px;
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      
+      .file-card {
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+      
+      .file-card-title {
+        font-size: 16px;
+        line-height: 1.5;
+      }
+      
+      .file-card-body {
+        font-size: 14px;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      
+      .btn {
+        min-height: 46px;
+        font-size: 16px;
+        padding: 13px 18px;
+      }
     }
     
     .dashboard-container {
@@ -739,6 +853,69 @@
       font-size: 14px;
     }
     
+    /* 6.2吋手機專用優化 */
+    .mobile-6inch .file-card {
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+    }
+    
+    .mobile-6inch .file-card-title {
+      font-size: 15px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+    
+    .mobile-6inch .file-card-body {
+      font-size: 13px;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .mobile-6inch .file-card-actions {
+      margin-top: 12px;
+      gap: 8px;
+    }
+    
+    .mobile-6inch .btn {
+      min-height: 44px;
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 8px;
+    }
+    
+    .mobile-6inch .btn-sm {
+      min-height: 36px;
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+    
+    .mobile-6inch .mobile-navbar {
+      height: 60px;
+    }
+    
+    .mobile-6inch .main-content {
+      padding-top: 60px;
+    }
+    
+    .mobile-6inch .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    
+    .mobile-6inch .stat-card {
+      padding: 16px;
+    }
+    
+    .mobile-6inch .stat-value {
+      font-size: 24px;
+    }
+    
+    .mobile-6inch .chart-container {
+      height: 160px;
+    }
+    
     /* 防止水平滾動 */
     .dashboard-container,
     .main-content,
@@ -1096,8 +1273,19 @@
           <i class="fas fa-chart-line me-2"></i>
           <span>Dashboard</span>
         </div>
-        <div class="mobile-user-info" id="mobile-user-info">
-          <i class="fas fa-user-circle"></i>
+        <div class="mobile-controls">
+          <button class="mobile-zoom-btn" onclick="adjustZoom(-0.1)" title="縮小">
+            <i class="fas fa-search-minus"></i>
+          </button>
+          <button class="mobile-zoom-btn" onclick="adjustZoom(0.1)" title="放大">
+            <i class="fas fa-search-plus"></i>
+          </button>
+          <button class="mobile-zoom-btn" onclick="resetZoom()" title="重置縮放">
+            <i class="fas fa-expand-arrows-alt"></i>
+          </button>
+          <div class="mobile-user-info" id="mobile-user-info">
+            <i class="fas fa-user-circle"></i>
+          </div>
         </div>
       </div>
     </nav>

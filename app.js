@@ -1500,31 +1500,60 @@ function isMobileDevice() {
 function detectMobileResolution() {
   const width = window.innerWidth;
   const height = window.innerHeight;
+  const pixelRatio = window.devicePixelRatio || 1;
+  const physicalWidth = width * pixelRatio;
+  const physicalHeight = height * pixelRatio;
+  
+  // 計算螢幕對角線尺寸 (近似)
+  const diagonalPixels = Math.sqrt(physicalWidth * physicalWidth + physicalHeight * physicalHeight);
+  const diagonalInches = diagonalPixels / (96 * pixelRatio); // 96 DPI 基準
   
   // 添加解析度相關的CSS類
-  document.body.classList.remove('mobile-small', 'mobile-medium', 'mobile-large');
+  document.body.classList.remove('mobile-small', 'mobile-medium', 'mobile-large', 'mobile-6inch');
   
   if (width <= 360) {
     document.body.classList.add('mobile-small');
-  } else if (width <= 480) {
+  } else if (width <= 414) {
     document.body.classList.add('mobile-medium');
   } else if (width <= 768) {
     document.body.classList.add('mobile-large');
   }
   
-  // 調整字體大小以適應不同解析度
-  const root = document.documentElement;
-  if (width <= 360) {
-    root.style.fontSize = '14px';
-  } else if (width <= 480) {
-    root.style.fontSize = '15px';
-  } else if (width <= 768) {
-    root.style.fontSize = '16px';
-  } else {
-    root.style.fontSize = '16px';
+  // 特別針對6.2吋手機的優化
+  if (diagonalInches >= 6.0 && diagonalInches <= 6.5) {
+    document.body.classList.add('mobile-6inch');
+    console.log(`檢測到6.2吋手機: ${width}x${height}, 對角線: ${diagonalInches.toFixed(1)}吋`);
   }
   
-  console.log(`手機解析度檢測: ${width}x${height}, 設備類型: ${isMobileDevice() ? '手機' : '桌面'}`);
+  // 動態調整字體大小
+  const root = document.documentElement;
+  let baseFontSize = 16;
+  
+  if (width <= 360) {
+    baseFontSize = 14;
+  } else if (width <= 414) {
+    baseFontSize = 15;
+  } else if (width <= 768) {
+    baseFontSize = 16;
+  } else {
+    baseFontSize = 16;
+  }
+  
+  // 6.2吋手機特殊調整
+  if (diagonalInches >= 6.0 && diagonalInches <= 6.5) {
+    baseFontSize = Math.max(baseFontSize, 15);
+  }
+  
+  root.style.fontSize = baseFontSize + 'px';
+  
+  // 調整容器最大寬度
+  const containers = document.querySelectorAll('.dashboard-container, .main-content, .sidebar');
+  containers.forEach(container => {
+    container.style.maxWidth = '100vw';
+    container.style.overflowX = 'hidden';
+  });
+  
+  console.log(`設備解析度檢測: ${width}x${height}, 物理解析度: ${physicalWidth}x${physicalHeight}, 對角線: ${diagonalInches.toFixed(1)}吋, 字體大小: ${baseFontSize}px`);
 }
 
 // 處理視窗大小變化
@@ -1534,6 +1563,45 @@ function handleResize() {
   // 如果視窗變大，關閉手機選單
   if (window.innerWidth > 768) {
     closeMobileMenu();
+  }
+}
+
+// 手動調整縮放比例
+function adjustZoom(scale) {
+  const root = document.documentElement;
+  const currentScale = parseFloat(root.style.zoom) || 1;
+  const newScale = Math.max(0.5, Math.min(3, currentScale + scale));
+  
+  root.style.zoom = newScale;
+  
+  // 儲存用戶偏好
+  localStorage.setItem('userZoom', newScale);
+  
+  console.log(`縮放調整: ${newScale.toFixed(2)}x`);
+  
+  // 顯示縮放提示
+  showBootstrapAlert(`縮放調整為 ${(newScale * 100).toFixed(0)}%`, 'info', 2000);
+}
+
+// 重置縮放
+function resetZoom() {
+  const root = document.documentElement;
+  root.style.zoom = '1';
+  localStorage.removeItem('userZoom');
+  
+  // 重新檢測解析度
+  detectMobileResolution();
+  
+  showBootstrapAlert('縮放已重置', 'success', 2000);
+}
+
+// 載入用戶縮放偏好
+function loadUserZoomPreference() {
+  const savedZoom = localStorage.getItem('userZoom');
+  if (savedZoom) {
+    const root = document.documentElement;
+    root.style.zoom = savedZoom;
+    console.log(`載入用戶縮放偏好: ${savedZoom}x`);
   }
 }
 
@@ -3453,6 +3521,9 @@ window.onload = () => {
     
     // 檢測手機解析度
     detectMobileResolution();
+    
+    // 載入用戶縮放偏好
+    loadUserZoomPreference();
     
     // 添加視窗大小變化監聽器
     window.addEventListener('resize', handleResize);
